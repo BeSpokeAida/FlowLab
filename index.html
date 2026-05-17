@@ -1,0 +1,3126 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>n8n Sandbox — Sistema di Ticketing PCTO</title>
+<style>
+/* ── Reset & Box Model ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+
+/* ── CSS Variables ── */
+:root {
+  --bg:        #1a1a2e;
+  --surface:   #20203a;
+  --surface2:  #2a2a45;
+  --surface3:  #343458;
+  --border:    rgba(255,255,255,.07);
+  --border2:   rgba(255,255,255,.14);
+  --text:      #e2e2f0;
+  --muted:     #7878a8;
+  --accent:    #ff9d00;
+  --acc-glow:  rgba(255,157,0,.22);
+  --green:     #2eb87a;
+  --red:       #e0455a;
+  --blue:      #2b8fe8;
+  --purple:    #9c6ef8;
+  --node-w:    210px;
+  --node-h:    72px;
+  --bar-h:     52px;
+  --side-w:    256px;
+  --panel-w:       390px;
+  --panel-w-triple: min(1180px, 96vw);
+  --r:         8px;
+  --r-sm:      5px;
+  --shadow:    0 8px 32px rgba(0,0,0,.55);
+  --shadow-sm: 0 3px 12px rgba(0,0,0,.4);
+  --logo-size: 40px;
+}
+
+/* ── Base ── */
+html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.4; }
+
+/* ── Layout ── */
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+/* ── Topbar ── */
+#topbar {
+  height: var(--bar-h); background: var(--surface); border-bottom: 1px solid var(--border2);
+  display: flex; align-items: center; padding: 0 14px; gap: 10px; flex-shrink: 0; z-index: 100;
+}
+.logo { display: flex; align-items: center; justify-content: center; user-select: none; }
+.logo-slot { width: var(--logo-size); height: var(--logo-size); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.logo-img { width: var(--logo-size); height: var(--logo-size); object-fit: contain; display: block; }
+.divider { width: 1px; height: 22px; background: var(--border2); flex-shrink: 0; }
+#wf-name { background: transparent; border: 1px solid transparent; border-radius: var(--r-sm); padding: 4px 8px; font-size: 14px; font-weight: 600; outline: none; transition: border-color .15s; min-width: 180px; }
+#wf-name:hover { border-color: var(--border2); }
+#wf-name:focus { border-color: var(--accent); background: var(--surface2); }
+.spacer { flex: 1; }
+.tabs { display: flex; gap: 2px; }
+.tab { padding: 5px 14px; border-radius: var(--r-sm); border: none; background: transparent; color: var(--muted); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; }
+.tab:hover { color: var(--text); background: var(--surface2); }
+.tab.active { color: var(--text); background: var(--surface3); }
+.btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 13px; border-radius: var(--r-sm); border: none; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; white-space: nowrap; }
+.btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border2); }
+.btn-ghost:hover { color: var(--text); background: var(--surface2); }
+.btn-accent { background: var(--accent); color: #000; font-weight: 700; }
+.btn-accent:hover { background: #ffb133; }
+.btn-green { background: var(--green); color: #fff; }
+.btn-green:hover { filter: brightness(1.1); }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+/* ── Main area ── */
+#main { flex: 1; display: flex; overflow: hidden; position: relative; }
+
+/* ── Sidebar ── */
+#sidebar { width: var(--side-w); background: var(--surface); border-right: 1px solid var(--border2); display: flex; flex-direction: column; flex-shrink: 0; z-index: 50; }
+.sb-head { padding: 10px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 7px; }
+.sb-search { flex: 1; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r-sm); padding: 5px 9px; color: var(--text); font-size: 12px; outline: none; }
+.sb-search:focus { border-color: var(--accent); }
+.sb-search::placeholder { color: var(--muted); }
+.sb-body { flex: 1; overflow-y: auto; padding: 6px 0; }
+.sb-body::-webkit-scrollbar { width: 3px; }
+.sb-body::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+.cat-hdr { display: flex; align-items: center; gap: 7px; padding: 7px 14px; color: var(--muted); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; cursor: pointer; user-select: none; }
+.cat-hdr:hover { color: var(--text); }
+.cat-arrow { font-size: 9px; transition: transform .15s; }
+.cat-arrow.open { transform: rotate(90deg); }
+.node-item { display: flex; align-items: center; gap: 9px; padding: 7px 14px 7px 20px; cursor: grab; transition: background .1s; user-select: none; }
+.node-item:hover { background: var(--surface2); }
+.node-item:active { cursor: grabbing; }
+.ni-icon { width: 26px; height: 26px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; white-space: nowrap; line-height: 1; font-family: ui-monospace, 'Cascadia Code', monospace; }
+.ni-info { flex: 1; min-width: 0; }
+.ni-name { font-size: 12.5px; font-weight: 500; color: var(--text); }
+.ni-desc { font-size: 10.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Canvas ── */
+#canvas-area {
+  flex: 1; position: relative; overflow: hidden;
+  background-color: var(--bg);
+  background-image: radial-gradient(circle, rgba(255,255,255,.055) 1px, transparent 1px);
+  background-size: 22px 22px;
+  cursor: default;
+}
+#canvas-world { position: absolute; top: 0; left: 0; width: 6000px; height: 4000px; transform-origin: 0 0; }
+#svg-layer { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+#nodes-layer { position: absolute; inset: 0; }
+
+/* ── Nodes ── */
+.wf-node {
+  position: absolute; width: var(--node-w); border-radius: var(--r);
+  background: var(--surface2); border: 2px solid var(--border2);
+  box-shadow: var(--shadow-sm); cursor: pointer; user-select: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.wf-node:hover { border-color: rgba(255,255,255,.22); box-shadow: var(--shadow); }
+.wf-node.selected { border-color: var(--accent); box-shadow: 0 0 0 3px var(--acc-glow), var(--shadow-sm); }
+.wf-node.exec-running { border-color: var(--accent); animation: node-run .55s ease-in-out infinite alternate; }
+.wf-node.exec-ok   { border-color: var(--green); }
+.wf-node.exec-err  { border-color: var(--red); }
+.wf-node.disabled  { opacity: .45; }
+/* Menu azioni: tre punti in alto a destra (hover o nodo selezionato) */
+.node-kebab {
+  position: absolute; top: -8px; right: 10px; z-index: 12;
+  display: flex; align-items: center; justify-content: center; gap: 3px;
+  width: 26px; height: 20px; padding: 0; margin: 0;
+  border: 1px solid var(--border2); border-radius: 6px;
+  background: var(--surface2); box-shadow: var(--shadow-sm);
+  cursor: pointer; opacity: 0; pointer-events: none;
+  transition: opacity .12s, background .12s, border-color .12s;
+}
+.node-kebab:hover { background: var(--surface3); border-color: rgba(255,255,255,.2); }
+.node-kebab-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+.wf-node:hover .node-kebab,
+.wf-node.selected .node-kebab { opacity: 1; pointer-events: auto; }
+@keyframes node-run {
+  from { box-shadow: 0 0 0 2px var(--acc-glow), var(--shadow-sm); }
+  to   { box-shadow: 0 0 18px 6px var(--acc-glow), var(--shadow-sm); }
+}
+.node-hdr { display: flex; align-items: center; gap: 8px; padding: 9px 11px 7px; }
+.node-type-ic { width: 22px; height: 22px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; white-space: nowrap; line-height: 1; font-family: ui-monospace, 'Cascadia Code', monospace; }
+.node-title { flex: 1; font-size: 12px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.node-badge { font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 8px; display: none; flex-shrink: 0; }
+.exec-ok  .node-badge { display: block; background: var(--green); color: #fff; }
+.exec-err .node-badge { display: block; background: var(--red);   color: #fff; }
+.node-body { padding: 4px 11px 9px; border-top: 1px solid var(--border); }
+.node-sub { font-size: 11px; font-weight: 500; }
+.node-items { font-size: 10px; color: var(--muted); margin-top: 1px; }
+.port { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: var(--surface3); border: 2px solid var(--border2); top: 50%; transform: translateY(-50%); cursor: crosshair; transition: background .12s, transform .1s, border-color .12s; z-index: 5; }
+.port:hover { background: var(--accent); border-color: var(--accent); transform: translateY(-50%) scale(1.35); }
+.port-in  { left: -7px; }
+.port-out { right: -7px; }
+.port-out.is-connecting { background: var(--accent); border-color: var(--accent); }
+
+/* ── SVG connections ── */
+.conn-path { stroke: var(--accent); stroke-width: 2; fill: none; opacity: .65; cursor: pointer; transition: opacity .15s, stroke-width .1s; }
+.conn-path:hover { opacity: 1; stroke-width: 2.5; }
+.conn-path.flowing { stroke-dasharray: 9 4; animation: flow .45s linear infinite; }
+@keyframes flow { to { stroke-dashoffset: -26; } }
+.conn-arrow { fill: var(--accent); opacity: .65; }
+#temp-path { stroke: var(--accent); stroke-width: 2; fill: none; stroke-dasharray: 7 4; pointer-events: none; opacity: .8; }
+
+/* ── Canvas controls ── */
+#canvas-ctrls {
+  position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 2px;
+  background: var(--surface); border: 1px solid var(--border2); border-radius: 20px; padding: 3px; z-index: 40;
+}
+.cc-btn { width: 30px; height: 30px; border-radius: 16px; border: none; background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; transition: all .15s; }
+.cc-btn:hover { background: var(--surface2); color: var(--text); }
+#zoom-pct { padding: 0 8px; font-size: 11.5px; color: var(--muted); }
+
+/* ── Execution banner ── */
+#exec-banner {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  background: var(--surface); border: 1px solid var(--border2); border-radius: 20px;
+  padding: 7px 15px; display: flex; align-items: center; gap: 10px; z-index: 80;
+  box-shadow: var(--shadow); font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+#exec-banner.show { opacity: 1; pointer-events: auto; }
+.spinner { width: 13px; height: 13px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Config Panel ── */
+#cfg-panel {
+  width: var(--panel-w); max-width: 96vw; background: var(--surface); border-left: 1px solid var(--border2);
+  display: flex; flex-direction: column; flex-shrink: 0;
+  position: absolute; right: 0; top: 0; bottom: 0; z-index: 60;
+  transform: translateX(100%); opacity: 0; pointer-events: none;
+  transition: transform .22s cubic-bezier(.4,0,.2,1), opacity .2s, width .2s;
+}
+#cfg-panel.open { transform: translateX(0); opacity: 1; pointer-events: auto; }
+#cfg-panel.cfg-panel--triple { width: var(--panel-w-triple); }
+.cp-hdr { padding: 14px 15px; border-bottom: 1px solid var(--border2); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.cp-icon { width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.cp-name { font-size: 14.5px; font-weight: 700; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-type { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.cp-close { width: 26px; height: 26px; border: none; background: transparent; color: var(--muted); cursor: pointer; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; font-size: 15px; transition: background .1s; }
+.cp-close:hover { background: var(--surface2); color: var(--text); }
+.cp-tabs { display: flex; flex-wrap: wrap; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.cp-tab { flex: 0 1 auto; min-width: 0; padding: 9px 10px; text-align: center; font-size: 12px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; }
+.cp-tab:hover { color: var(--text); }
+.cp-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.cp-main-row { flex: 1; display: flex; flex-direction: row; min-height: 0; min-width: 0; }
+.cp-io-col {
+  flex: 0 0 min(28%, 260px); max-width: 280px; min-width: 180px;
+  display: flex; flex-direction: column; min-height: 0; border: solid var(--border2);
+  border-width: 0 1px 0 0; background: rgba(0,0,0,.12);
+}
+.cp-io-col.cp-io-right { border-width: 0 0 0 1px; }
+.cp-io-col[hidden] { display: none !important; }
+.cp-center-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+.cp-body { flex: 1; overflow-y: auto; padding: 15px; min-height: 0; }
+.cp-body::-webkit-scrollbar { width: 3px; }
+.cp-body::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+.io-side-hdr { flex-shrink: 0; padding: 8px 10px; font-size: 10px; font-weight: 800; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+.io-side-inner { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.io-side-inner::-webkit-scrollbar { width: 3px; }
+.io-pre-wrap--side { max-height: 200px; flex-shrink: 0; }
+.json-chips { display: flex; flex-wrap: wrap; gap: 5px; flex-shrink: 0; }
+.json-chip {
+  font-family: Consolas, 'Courier New', monospace; font-size: 10px; padding: 4px 7px; border-radius: var(--r-sm);
+  background: var(--surface3); border: 1px solid var(--border2); cursor: grab; user-select: none; color: var(--accent); max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.json-chip:active { cursor: grabbing; }
+.drop-target-active { box-shadow: 0 0 0 2px var(--accent); border-color: var(--accent) !important; }
+.cp-footer { padding: 10px 14px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-shrink: 0; }
+.cp-footer.is-hidden { display: none; }
+
+/* ── Input / Output JSON (post-esecuzione) ── */
+.io-wrap { display: flex; flex-direction: column; gap: 10px; min-height: 120px; }
+.io-hint { font-size: 11px; color: var(--muted); line-height: 1.55; padding: 8px 10px; background: var(--surface2); border-radius: var(--r-sm); border: 1px solid var(--border); }
+.io-hint code { color: var(--accent); }
+.io-meta { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.io-pre-wrap { flex: 1; min-height: 0; border-radius: var(--r-sm); border: 1px solid var(--border2); background: #0d1117; overflow: auto; max-height: min(52vh, 480px); }
+.io-pre { margin: 0; padding: 11px 12px; font-family: 'Consolas', 'Courier New', monospace; font-size: 11.5px; line-height: 1.5; color: #c9d1d9; white-space: pre; tab-size: 2; }
+.io-empty { text-align: center; padding: 28px 14px; color: var(--muted); font-size: 12.5px; line-height: 1.6; }
+.io-empty strong { color: var(--text); display: block; margin-bottom: 6px; }
+
+/* ── Form Fields in Panel ── */
+.fg { margin-bottom: 14px; }
+.fl { display: block; font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
+.fl.req::after { content: ' *'; color: var(--red); }
+.fi-wrap { position: relative; display: flex; }
+.fi, .fs, .fta {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--r-sm); padding: 7px 34px 7px 9px; color: var(--text); font-size: 13px; outline: none; transition: border-color .15s;
+}
+.fi:focus, .fs:focus, .fta:focus { border-color: var(--accent); }
+.fi::placeholder, .fta::placeholder { color: var(--muted); }
+.fs { padding-right: 9px; cursor: pointer; }
+.fs option { background: var(--surface2); }
+.fta { resize: vertical; min-height: 72px; line-height: 1.5; padding-right: 9px; }
+.expr-toggle { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; border-radius: 3px; border: none; background: transparent; color: var(--muted); cursor: pointer; font-size: 11px; font-weight: 700; font-family: monospace; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+.expr-toggle:hover { background: var(--surface3); color: var(--accent); }
+.expr-toggle.on { color: var(--accent); background: var(--acc-glow); }
+.expr-box { width: 100%; background: #141010; border: 1px solid var(--accent); border-radius: var(--r-sm); padding: 7px 9px; color: #ffcc80; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.55; resize: vertical; min-height: 52px; outline: none; }
+.expr-box:focus { border-color: #ffb84d; }
+.expr-hint { font-size: 10.5px; color: var(--muted); margin-top: 4px; font-family: monospace; }
+.code-ta { width: 100%; background: #0d1117; border: 1px solid var(--border2); border-radius: var(--r-sm); padding: 11px; font-family: 'Courier New', monospace; font-size: 12px; color: #c9d1d9; line-height: 1.6; resize: vertical; min-height: 200px; outline: none; transition: border-color .15s; tab-size: 2; }
+.code-ta:focus { border-color: var(--accent); }
+.arr-list { display: flex; flex-direction: column; gap: 7px; }
+.arr-item { background: var(--surface3); border-radius: var(--r-sm); padding: 10px; }
+.arr-item-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.arr-item-lbl { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.arr-rm { width: 18px; height: 18px; border-radius: 3px; border: none; background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: all .1s; }
+.arr-rm:hover { background: rgba(224,69,90,.2); color: var(--red); }
+.add-item-btn { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 7px; border-radius: var(--r-sm); border: 1px dashed var(--border2); background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; width: 100%; transition: all .15s; margin-top: 4px; }
+.add-item-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--acc-glow); }
+.dt-map-rm-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  margin-top: 8px; padding: 6px 12px; border-radius: var(--r-sm); border: 1px solid var(--border2);
+  background: transparent; color: var(--muted); font-size: 12px; font-weight: 500; cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.dt-map-rm-btn:hover { background: rgba(224,69,90,.12); color: var(--red); border-color: rgba(224,69,90,.35); }
+.dt-map-rm-x { font-size: 16px; line-height: 1; font-weight: 600; transform: translateY(-0.5px); }
+.col-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.col-key { background: var(--surface3); border-radius: var(--r-sm); padding: 6px 8px; font-size: 11.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.col-val-expr { background: #141010; border: 1px solid var(--accent); border-radius: var(--r-sm); padding: 5px 7px; font-family: monospace; font-size: 11px; color: #ffcc80; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hint-box { background: var(--surface2); border-radius: var(--r-sm); padding: 9px 11px; margin-top: 6px; }
+.hint-box-ttl { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
+.hint-box-txt { font-size: 11px; color: var(--muted); line-height: 1.6; }
+code { color: var(--accent); font-family: monospace; font-size: 11px; }
+.sep { height: 1px; background: var(--border); margin: 12px 0; }
+.preview-box { background: #fff; border-radius: var(--r); padding: 14px 16px; color: #1a1a2e; }
+.preview-title { font-size: 16px; font-weight: 700; margin-bottom: 5px; }
+.preview-msg { font-size: 13px; color: #444; white-space: pre-line; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; }
+.toggle-row label { display: flex; align-items: center; gap: 7px; cursor: pointer; }
+
+/* ── Views (Executions / DataTable) ── */
+.view { position: absolute; inset: 0; background: var(--bg); z-index: 30; display: none; flex-direction: column; }
+.view.active { display: flex; }
+.view-hdr { padding: 18px 22px; border-bottom: 1px solid var(--border2); display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+.view-title { font-size: 18px; font-weight: 700; }
+.vbadge { background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px; padding: 2px 9px; font-size: 11.5px; color: var(--muted); }
+
+/* Data Table */
+.dt-wrap { flex: 1; overflow: auto; }
+.dt-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.dt-tbl thead th { background: var(--surface); padding: 10px 14px; text-align: left; font-size: 10.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border2); position: sticky; top: 0; white-space: nowrap; }
+.dt-tbl tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+.dt-tbl tbody tr:hover { background: var(--surface); }
+.dt-tbl tbody td { padding: 9px 14px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dt-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--muted); }
+.dt-empty-ico { font-size: 40px; }
+
+/* Executions */
+.exec-list { flex: 1; overflow-y: auto; padding: 14px 20px; display: flex; flex-direction: column; gap: 7px; }
+.exec-item { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--r); padding: 11px 14px; display: flex; align-items: center; gap: 11px; }
+.exec-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.exec-dot.ok  { background: var(--green); }
+.exec-dot.err { background: var(--red); }
+.exec-dot.run { background: var(--accent); animation: blink .8s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: .25; } }
+.exec-info { flex: 1; }
+.exec-trigger { font-size: 13px; font-weight: 600; }
+.exec-ts { font-size: 11px; color: var(--muted); }
+.exec-dur { font-size: 11.5px; color: var(--muted); }
+.badge { display: inline-block; padding: 2px 7px; border-radius: 8px; font-size: 10.5px; font-weight: 600; }
+.badge-trig { background: rgba(224,69,90,.18); color: #e0455a; }
+.badge-data { background: rgba(46,184,122,.18); color: var(--green); }
+.exec-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--muted); }
+
+/* ── Node Library Modal ── */
+#lib-modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .15s; }
+#lib-modal.open { opacity: 1; pointer-events: auto; }
+.lib-box { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--r); box-shadow: var(--shadow); width: 500px; max-height: 68vh; display: flex; flex-direction: column; }
+.lib-search-wrap { padding: 14px; border-bottom: 1px solid var(--border); }
+.lib-search { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r); padding: 9px 13px; color: var(--text); font-size: 14px; outline: none; }
+.lib-search:focus { border-color: var(--accent); }
+.lib-search::placeholder { color: var(--muted); }
+.lib-grid { flex: 1; overflow-y: auto; padding: 11px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 7px; align-content: start; }
+.lib-item { display: flex; align-items: center; gap: 9px; padding: 10px 11px; border-radius: var(--r-sm); background: var(--surface2); border: 1px solid transparent; cursor: pointer; transition: all .1s; }
+.lib-item:hover { border-color: var(--accent); background: var(--surface3); }
+.lib-item-name { font-size: 12.5px; font-weight: 600; }
+.lib-item-cat  { font-size: 10.5px; color: var(--muted); }
+
+/* ── Trigger picker popover ── */
+#trig-picker {
+  position: absolute; top: calc(var(--bar-h) - 4px); right: 14px;
+  background: var(--surface); border: 1px solid var(--border2); border-radius: var(--r);
+  box-shadow: var(--shadow); z-index: 150; min-width: 240px; padding: 6px 0;
+  display: none;
+}
+#trig-picker.open { display: block; }
+.trig-opt { display: flex; align-items: center; gap: 9px; padding: 9px 14px; cursor: pointer; transition: background .1s; }
+.trig-opt:hover { background: var(--surface2); }
+.trig-opt-name { font-size: 13px; font-weight: 600; }
+.trig-opt-type { font-size: 11px; color: var(--muted); }
+
+/* ── Form execution modal ── */
+#form-modal { position: fixed; inset: 0; background: rgba(0,0,0,.72); z-index: 300; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .2s; }
+#form-modal.open { opacity: 1; pointer-events: auto; }
+.fm-box { background: #fff; color: #1a1a2e; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.5); width: 460px; max-height: 82vh; overflow-y: auto; padding: 30px; }
+.fm-badge { display: inline-block; background: #fff0e0; color: #cc7700; border-radius: 5px; font-size: 10px; font-weight: 700; padding: 2px 7px; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+.fm-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; color: #1a1a2e; }
+.fm-desc  { font-size: 13.5px; color: #666; margin-bottom: 22px; line-height: 1.5; }
+.fm-fg { margin-bottom: 14px; }
+.fm-lbl { display: block; font-size: 12.5px; font-weight: 600; color: #1a1a2e; margin-bottom: 5px; }
+.fm-inp { width: 100%; border: 2px solid #e0e0ea; border-radius: 6px; padding: 9px 11px; font-size: 14px; outline: none; background: #fff; color: #1a1a2e; transition: border-color .15s; }
+.fm-inp:focus { border-color: #ff9d00; }
+.fm-submit { width: 100%; padding: 12px; background: #ff9d00; color: #000; border: none; border-radius: 7px; font-size: 14px; font-weight: 800; cursor: pointer; margin-top: 6px; transition: background .15s; }
+.fm-submit:hover { background: #ffb133; }
+.fm-cancel { width: 100%; padding: 9px; background: transparent; border: 1px solid #d0d0da; border-radius: 7px; font-size: 13px; color: #888; cursor: pointer; margin-top: 8px; transition: all .15s; }
+.fm-cancel:hover { border-color: #bbb; color: #444; }
+.fm-completion { text-align: center; padding: 12px 0; }
+.fm-completion-ico  { font-size: 52px; margin-bottom: 14px; }
+.fm-completion-ttl  { font-size: 21px; font-weight: 800; margin-bottom: 8px; color: #1a1a2e; }
+.fm-completion-msg  { font-size: 14px; color: #444; white-space: pre-line; line-height: 1.6; }
+
+/* ── Context menu ── */
+#ctx-menu { position: fixed; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--r-sm); box-shadow: var(--shadow); z-index: 500; min-width: 158px; padding: 4px 0; display: none; }
+#ctx-menu.open { display: block; }
+.ctx-hint { padding: 7px 12px 4px; font-size: 10px; color: var(--muted); line-height: 1.35; border-bottom: 1px solid var(--border); }
+.ctx-hint strong { color: var(--text); }
+.ctx-item { padding: 7px 13px; font-size: 13px; color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background .1s; }
+.ctx-item:hover { background: var(--surface2); }
+.ctx-item.danger { color: var(--red); }
+.ctx-sep { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* ── Scrollbar global ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+
+/* ── Focus ── */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ══ SISTEMA ══ */
+
+/* Sidebar button */
+#sb-sistema-btn {
+  flex-shrink: 0; width: 100%; padding: 11px 14px 12px;
+  border-top: 1px solid var(--border2); border-left: none; border-right: none; border-bottom: none;
+  background: transparent; color: var(--text); font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; gap: 9px; cursor: pointer; transition: background .12s;
+}
+#sb-sistema-btn:hover { background: var(--surface2); }
+#sb-sistema-btn.active { background: rgba(124,58,237,.14); color: #a78bfa; }
+.sist-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background .2s; }
+#sb-sistema-btn.active .sist-dot { background: #a78bfa; box-shadow: 0 0 6px #a78bfa; animation: sist-pulse 1.5s ease-in-out infinite; }
+@keyframes sist-pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
+
+/* Panel */
+#sistema-panel {
+  width: 0; flex-shrink: 0; overflow: hidden;
+  background: var(--surface); border-left: 1px solid var(--border2);
+  display: flex; flex-direction: column;
+  align-self: stretch;
+  min-height: 0;
+  max-height: 100%;
+  transition: width .22s cubic-bezier(.4,0,.2,1);
+}
+#sistema-panel.open { width: min(520px, 42vw); }
+#sistema-panel > * { min-width: min(520px, 42vw); }
+
+/* Header */
+.sist-hdr { padding: 14px 16px; border-bottom: 1px solid var(--border2); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.sist-hdr-icon { font-size: 20px; }
+.sist-hdr-title { font-size: 15px; font-weight: 700; }
+.sist-hdr-sub { font-size: 10.5px; color: var(--muted); margin-top: 1px; }
+.sist-close-btn { width: 26px; height: 26px; border: none; background: transparent; color: var(--muted); cursor: pointer; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; font-size: 15px; margin-left: auto; }
+.sist-close-btn:hover { background: var(--surface2); color: var(--text); }
+
+/* Body */
+.sist-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.sist-body::-webkit-scrollbar { width: 3px; }
+.sist-body::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+
+/* URL config box */
+.sist-url-box { background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r); overflow: hidden; }
+.sist-url-hdr { display: flex; align-items: center; gap: 8px; padding: 11px 14px; cursor: pointer; user-select: none; }
+.sist-url-hdr-title { font-size: 12.5px; font-weight: 700; flex: 1; }
+.sist-chevron { font-size: 10px; color: var(--muted); transition: transform .15s; }
+.sist-url-box.collapsed .sist-chevron { transform: rotate(-90deg); }
+.sist-url-box.collapsed .sist-url-fields { display: none; }
+.sist-url-fields { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+
+/* Form cards */
+.sist-card {
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r); overflow: hidden;
+  flex-shrink: 0;
+  max-height: min(78vh, 720px);
+  display: flex; flex-direction: column;
+}
+.sist-card.locked { opacity: .45; pointer-events: none; }
+.sist-card-hdr { display: flex; align-items: center; gap: 8px; padding: 11px 14px; cursor: pointer; user-select: none; border-bottom: 1px solid transparent; transition: border-color .15s; }
+.sist-card:not(.collapsed) .sist-card-hdr { border-bottom-color: var(--border2); }
+.sist-card-icon { font-size: 15px; }
+.sist-card-title { font-size: 13px; font-weight: 700; flex: 1; }
+.sist-card-arrow { font-size: 10px; color: var(--muted); transition: transform .15s; }
+.sist-card.collapsed .sist-card-arrow { transform: rotate(-90deg); }
+.sist-card.collapsed .sist-card-body { display: none; }
+.sist-card-body {
+  padding: 12px 14px 14px;
+  display: flex; flex-direction: column; gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+.sist-card-actions { flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
+.sist-resp {
+  padding: 8px 10px; border-radius: var(--r-sm); font-size: 11px; font-family: monospace;
+  white-space: pre-wrap; word-break: break-word; background: var(--surface3);
+  border: 1px solid var(--border2); display: none;
+  min-height: 52px; max-height: min(24vh, 200px); overflow-y: auto; overflow-x: auto;
+  resize: vertical; flex-shrink: 0;
+}
+.sist-resp.show { display: block; }
+.sist-resp.ok  { border-color: var(--green); color: #6ee7b7; }
+.sist-resp.err { border-color: var(--red);   color: #fca5a5; }
+.sist-resp-lbl { font-size: 9.5px; color: var(--muted); margin-bottom: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.sist-spinner-wrap { display: none; text-align: center; padding: 8px 0; }
+.sist-spinner-wrap.show { display: block; }
+
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ══ TOPBAR ══ -->
+<header id="topbar">
+  <div class="logo" aria-label="Logo">
+    <span class="logo-slot" aria-hidden="true">
+      <img class="logo-img" src="./logo.png" alt="" decoding="async" />
+    </span>
+  </div>
+  <div class="divider" aria-hidden="true"></div>
+  <input id="wf-name" type="text" value="Nuovo workflow" aria-label="Nome workflow" />
+  <div class="spacer"></div>
+  <nav class="tabs" role="tablist" aria-label="Vista">
+    <button class="tab active" data-tab="editor"     role="tab" aria-selected="true">Editor</button>
+    <button class="tab"        data-tab="executions" role="tab" aria-selected="false">Executions</button>
+    <button class="tab"        data-tab="datatable"  role="tab" aria-selected="false">Data Table</button>
+  </nav>
+  <div class="spacer"></div>
+  <button class="btn btn-ghost btn-sm" id="btn-add-node" aria-label="Aggiungi nodo" title="Aggiungi nodo (A)">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Aggiungi
+  </button>
+  <button class="btn btn-ghost btn-sm" id="btn-save" aria-label="Salva workflow" title="Salva JSON">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+    Salva
+  </button>
+  <input type="file" id="wf-import-file" accept=".json,application/json" hidden aria-hidden="true" tabindex="-1" />
+  <button class="btn btn-ghost btn-sm" id="btn-import" type="button" aria-label="Importa workflow da JSON" title="Stesso formato di Salva: name, nodes, connections">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    Importa
+  </button>
+  <button class="btn btn-green btn-sm" id="btn-exec" aria-label="Esegui workflow">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="5,3 19,12 5,21"/></svg>
+    Esegui
+  </button>
+  <!-- trigger picker popover -->
+  <div id="trig-picker" role="menu" aria-label="Scegli trigger"></div>
+</header>
+
+<!-- ══ MAIN ══ -->
+<main id="main" role="main">
+
+  <!-- Sidebar -->
+  <aside id="sidebar" aria-label="Libreria nodi">
+    <div class="sb-head">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="color:var(--muted);flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="search" class="sb-search" id="sb-search" placeholder="Cerca nodi…" aria-label="Cerca nodi" />
+    </div>
+    <div class="sb-body" id="sb-body"></div>
+    <button id="sb-sistema-btn" type="button" aria-label="Apri Sistema webhook">
+      <span class="sist-dot" aria-hidden="true"></span>
+      <span>Sistema</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="margin-left:auto;opacity:.5"><path d="m9 18 6-6-6-6"/></svg>
+    </button>
+  </aside>
+
+  <!-- Canvas -->
+  <div id="canvas-area" aria-label="Canvas workflow">
+    <div id="canvas-world">
+      <svg id="svg-layer" aria-hidden="true">
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0,8 3,0 6" class="conn-arrow"/>
+          </marker>
+        </defs>
+        <g id="conns-g"></g>
+        <path id="temp-path" d="" aria-hidden="true"/>
+      </svg>
+      <div id="nodes-layer"></div>
+    </div>
+
+    <!-- Canvas controls -->
+    <div id="canvas-ctrls" aria-label="Controlli canvas">
+      <button class="cc-btn" id="cc-fit"  title="Adatta schermata (F)" aria-label="Adatta schermata">⊡</button>
+      <button class="cc-btn" id="cc-out"  title="Riduci (-)" aria-label="Riduci zoom">−</button>
+      <span id="zoom-pct" aria-live="polite">100%</span>
+      <button class="cc-btn" id="cc-in"   title="Ingrandisci (+)" aria-label="Aumenta zoom">+</button>
+    </div>
+
+    <!-- Exec banner -->
+    <div id="exec-banner" role="status" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <span id="exec-txt">Esecuzione…</span>
+      <button class="btn btn-ghost btn-sm" id="btn-stop">Stop</button>
+    </div>
+  </div>
+
+  <!-- Sistema panel -->
+  <section id="sistema-panel" aria-label="Sistema Webhook">
+    <!-- rendered by renderSistema() -->
+  </section>
+
+  <!-- Config panel -->
+  <section id="cfg-panel" aria-label="Configurazione nodo">
+    <div class="cp-hdr">
+      <div class="cp-icon" id="cp-icon" aria-hidden="true"></div>
+      <div style="flex:1;min-width:0">
+        <div class="cp-name" id="cp-name">Nodo</div>
+        <div class="cp-type" id="cp-type"></div>
+      </div>
+      <button class="cp-close" id="cp-close" aria-label="Chiudi pannello">✕</button>
+    </div>
+    <div class="cp-tabs" role="tablist" id="cp-tabs">
+      <div class="cp-tab active" role="tab" aria-selected="true"  data-ptab="params">Parametri</div>
+      <div class="cp-tab"        role="tab" aria-selected="false" data-ptab="settings">Impostazioni</div>
+      <div class="cp-tab"        role="tab" aria-selected="false" data-ptab="notes">Note</div>
+    </div>
+    <div class="cp-main-row" id="cp-main-row">
+      <aside class="cp-io-col cp-io-left" id="cp-io-left" hidden aria-label="Dati in ingresso"></aside>
+      <div class="cp-center-wrap" id="cp-center-wrap">
+        <div class="cp-body" id="cp-body"></div>
+      </div>
+      <aside class="cp-io-col cp-io-right" id="cp-io-right" hidden aria-label="Dati in uscita"></aside>
+    </div>
+    <div class="cp-footer" id="cp-footer">
+      <button class="btn btn-ghost btn-sm" id="btn-test-node" style="flex:1">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="5,3 19,12 5,21"/></svg>
+        Test nodo
+      </button>
+      <button class="btn btn-accent btn-sm" id="btn-save-node" style="flex:1">Salva</button>
+    </div>
+  </section>
+
+  <!-- Executions view -->
+  <div id="exec-view" class="view" role="region" aria-label="Storico esecuzioni">
+    <div class="view-hdr">
+      <div>
+        <div class="view-title">Esecuzioni</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Storico delle esecuzioni del workflow</div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-ghost btn-sm" id="btn-clr-exec">Svuota</button>
+    </div>
+    <div id="exec-list" class="exec-list"></div>
+  </div>
+
+  <!-- DataTable view -->
+  <div id="dt-view" class="view" role="region" aria-label="Data Table">
+    <div class="view-hdr">
+      <div>
+        <div class="view-title">Esercitazione <span class="vbadge" id="dt-badge">0 righe</span></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Tabella dati del workflow di ticketing</div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-ghost btn-sm" id="btn-clr-dt">Svuota</button>
+      <button class="btn btn-ghost btn-sm" id="btn-exp-dt" type="button" title="Sempre inclusa la riga intestazione (nomi colonna). Con 0 righe dati il file contiene solo quella riga: è normale, come un foglio Excel vuoto con le intestazioni.">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Esporta CSV
+      </button>
+    </div>
+    <div id="dt-content"></div>
+  </div>
+
+</main>
+</div><!-- #app -->
+
+<!-- ══ MODALS ══ -->
+<div id="lib-modal" role="dialog" aria-modal="true" aria-label="Libreria nodi">
+  <div class="lib-box">
+    <div class="lib-search-wrap">
+      <input type="search" class="lib-search" id="lib-search" placeholder="🔍  Cerca nodi — form, codice, http, email…" aria-label="Cerca nodo" />
+    </div>
+    <div class="lib-grid" id="lib-grid"></div>
+  </div>
+</div>
+
+<div id="form-modal" role="dialog" aria-modal="true" aria-label="Esecuzione form">
+  <div class="fm-box" id="fm-content"></div>
+</div>
+
+<div id="ctx-menu" role="menu" aria-label="Azioni nodo">
+  <div class="ctx-hint"><strong>⋯</strong> sul nodo (in alto a destra) per questo menu. <strong>Clic destro</strong> sul nodo apre il pannello parametri.</div>
+  <div class="ctx-item" role="menuitem" data-ctx="test">▶ &nbsp;Test nodo</div>
+  <div class="ctx-item" role="menuitem" data-ctx="copy">⧉ &nbsp;Duplica</div>
+  <div class="ctx-item" role="menuitem" data-ctx="open">✎ &nbsp;Configura</div>
+  <div class="ctx-item" role="menuitem" data-ctx="disable">⊘ &nbsp;Attiva/Disabilita</div>
+  <div class="ctx-sep" role="separator"></div>
+  <div class="ctx-item danger" role="menuitem" data-ctx="del">🗑 &nbsp;Elimina nodo</div>
+</div>
+
+<script type="module">
+'use strict';
+
+// ════════════════════════════════════════════════════════════════════════════
+//  NODE TYPES REGISTRY
+// ════════════════════════════════════════════════════════════════════════════
+const NT = {
+  'formTrigger': {
+    key: 'n8n-nodes-base.formTrigger', label: 'Form Trigger', cat: 'Triggers',
+    color: '#e0455a', icon: '📋', isTrigger: true,
+    desc: 'Avvia il workflow alla compilazione di un form'
+  },
+  'manualTrigger': {
+    key: 'n8n-nodes-base.manualTrigger', label: 'Manual Trigger', cat: 'Triggers',
+    color: '#9c6ef8', icon: '▶', isTrigger: true,
+    desc: 'Avvia il workflow manualmente con dati personalizzati'
+  },
+  'webhook': {
+    key: 'n8n-nodes-base.webhook', label: 'Webhook', cat: 'Triggers',
+    color: '#e67e22', icon: '🔗', isTrigger: true,
+    desc: 'Riceve dati da un webhook HTTP'
+  },
+  'schedule': {
+    key: 'n8n-nodes-base.scheduleTrigger', label: 'Schedule', cat: 'Triggers',
+    color: '#8e44ad', icon: '⏰', isTrigger: true,
+    desc: 'Esegue il workflow a intervalli regolari'
+  },
+  'code': {
+    key: 'n8n-nodes-base.code', label: 'Code', cat: 'Core',
+    color: '#f39c12', icon: '</>',
+    desc: 'Esegui codice JavaScript o Python personalizzato'
+  },
+  'set': {
+    key: 'n8n-nodes-base.set', label: 'Set', cat: 'Core',
+    color: '#16a085', icon: '✏',
+    desc: 'Imposta o sovrascrive valori nei dati'
+  },
+  'if': {
+    key: 'n8n-nodes-base.if', label: 'IF', cat: 'Core',
+    color: '#8e44ad', icon: '⚡',
+    desc: 'Smista il flusso in base a condizioni logiche'
+  },
+  'merge': {
+    key: 'n8n-nodes-base.merge', label: 'Merge', cat: 'Core',
+    color: '#2980b9', icon: '⇋',
+    desc: 'Unisce dati da più branch del workflow'
+  },
+  'dataTable': {
+    key: 'n8n-nodes-base.dataTable', label: 'Data Table', cat: 'Data',
+    color: '#27ae60', icon: '🗄',
+    desc: 'Leggi, scrivi o aggiorna la tabella dati interna'
+  },
+  'form': {
+    key: 'n8n-nodes-base.form', label: 'Form Response', cat: 'Core',
+    color: '#2b8fe8', icon: '📄',
+    desc: 'Mostra una risposta/completamento all\'utente del form'
+  },
+  'httpRequest': {
+    key: 'n8n-nodes-base.httpRequest', label: 'HTTP Request', cat: 'Network',
+    color: '#1b7ec2', icon: '🌐',
+    desc: 'Effettua richieste HTTP a qualsiasi API'
+  },
+  'sendEmail': {
+    key: 'n8n-nodes-base.emailSend', label: 'Send Email', cat: 'Communication',
+    color: '#c0392b', icon: '📧',
+    desc: 'Invia email via SMTP'
+  },
+  'slack': {
+    key: 'n8n-nodes-base.slack', label: 'Slack', cat: 'Communication',
+    color: '#4a154b', icon: '💬',
+    desc: 'Invia messaggi o gestisce canali Slack'
+  },
+  'googleSheets': {
+    key: 'n8n-nodes-base.googleSheets', label: 'Google Sheets', cat: 'Data',
+    color: '#0f9d58', icon: '📊',
+    desc: 'Leggi e scrivi su Google Sheets'
+  },
+};
+
+const CATS = {
+  'Triggers':      { icon: '⚡' },
+  'Core':          { icon: '⚙' },
+  'Data':          { icon: '🗄' },
+  'Network':       { icon: '🌐' },
+  'Communication': { icon: '📬' },
+};
+
+function ntByFullKey(fk) {
+  return Object.values(NT).find(n => n.key === fk) ?? { label: fk, color: '#555', icon: '?', cat: 'Core', desc: '' };
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  INITIAL WORKFLOW — canvas vuoto (costruzione da parte degli studenti)
+// ════════════════════════════════════════════════════════════════════════════
+const INIT_NODES = [];
+const INIT_CONNS = [];
+
+// ════════════════════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════════════════════
+const NW = 210, NH = 72;
+
+const state = {
+  nodes:   JSON.parse(JSON.stringify(INIT_NODES)),
+  conns:   JSON.parse(JSON.stringify(INIT_CONNS)),
+  canvas:  { x: 0, y: 0, zoom: 1 },
+  tab:     'editor',
+  sel:     null,   // selected node id
+  panel:   { open: false, id: null, tab: 'params' },
+  catOpen: { Triggers: true, Core: true, Data: true, Network: false, Communication: false },
+  exec:    { running: false, step: null, res: {}, logs: [], io: {} },
+  execHistory: [],
+  dt: {
+    cols: ['ticket_id','email','nome','categoria','priorita','problema','stato','Submission','avanzamento'],
+    rows: [],
+  },
+  connecting: { active: false, fromId: null, tx: { x1:0,y1:0,x2:0,y2:0 } },
+  ctx: { open: false, id: null },
+  sistema: { open: false, urls: { insert: '', check: '', update: '' }, collapsed: { urls: false, insert: false, check: false, update: false } },
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+//  UTILITIES
+// ════════════════════════════════════════════════════════════════════════════
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+/** Clone workflow items [{ json }] per snapshot Input/Output */
+function cloneItems(items) {
+  try { return JSON.parse(JSON.stringify(items ?? [])); }
+  catch { return []; }
+}
+
+const NT_IMPORT_KEYS = new Set(Object.values(NT).map(nt => nt.key));
+
+/**
+ * Valida e normalizza un export sandbox { name, nodes, connections } (accetta anche "conns").
+ * @returns {{ ok:true, name:string, nodes:object[], conns:{from:string,to:string}[] } | { ok:false, err:string }}
+ */
+function parseWorkflowImportObject(obj) {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj))
+    return { ok: false, err: 'Il file deve contenere un unico oggetto JSON (non un array).' };
+  if (!Array.isArray(obj.nodes))
+    return { ok: false, err: 'Campo obbligatorio: array "nodes".' };
+
+  const seen = new Set();
+  const nodes = [];
+  for (let i = 0; i < obj.nodes.length; i++) {
+    const n = obj.nodes[i];
+    if (!n || typeof n !== 'object' || Array.isArray(n))
+      return { ok: false, err: `nodes[${i}] deve essere un oggetto.` };
+    const id = String(n.id ?? '').trim();
+    if (!id) return { ok: false, err: `nodes[${i}]: manca "id" (stringa).` };
+    if (seen.has(id)) return { ok: false, err: `ID duplicato tra i nodi: "${id}".` };
+    seen.add(id);
+    const type = String(n.type ?? '').trim();
+    if (!NT_IMPORT_KEYS.has(type))
+      return { ok: false, err: `nodes[${i}]: tipo non supportato in sandbox: "${type}".` };
+    const name = String(n.name ?? 'Nodo').trim() || 'Nodo';
+    let pos = n.pos;
+    if (!Array.isArray(pos) || pos.length < 2 || !Number.isFinite(Number(pos[0])) || !Number.isFinite(Number(pos[1])))
+      pos = [350 + i * 40, 250 + i * 28];
+    else pos = [Math.round(Number(pos[0])), Math.round(Number(pos[1]))];
+    let p = {};
+    if (n.p != null && typeof n.p === 'object' && !Array.isArray(n.p)) {
+      try { p = JSON.parse(JSON.stringify(n.p)); }
+      catch { return { ok: false, err: `nodes[${i}]: parametro "p" non serializzabile.` }; }
+    }
+    const node = { id, type, name, pos, p, disabled: !!n.disabled };
+    nodes.push(node);
+  }
+
+  const rawConns = Array.isArray(obj.connections) ? obj.connections
+    : Array.isArray(obj.conns) ? obj.conns : [];
+  if (!Array.isArray(rawConns))
+    return { ok: false, err: '"connections" (se presente) deve essere un array.' };
+
+  const conns = [];
+  const pair = new Set();
+  for (let i = 0; i < rawConns.length; i++) {
+    const c = rawConns[i];
+    if (!c || typeof c !== 'object') continue;
+    const from = String(c.from ?? '').trim();
+    const to = String(c.to ?? '').trim();
+    if (!from || !to || from === to) continue;
+    if (!seen.has(from) || !seen.has(to)) continue;
+    const key = `${from}\t${to}`;
+    if (pair.has(key)) continue;
+    pair.add(key);
+    conns.push({ from, to });
+  }
+
+  const name = typeof obj.name === 'string' && obj.name.trim() ? obj.name.trim() : 'Workflow importato';
+  return { ok: true, name, nodes, conns };
+}
+
+/** Inserisce testo nel focus di input/textarea (es. drop da chip) */
+function insertAtCursor(el, text) {
+  if (!el || (el.tagName !== 'TEXTAREA' && el.tagName !== 'INPUT')) return;
+  const ta = el;
+  const start = typeof ta.selectionStart === 'number' ? ta.selectionStart : ta.value.length;
+  const end = typeof ta.selectionEnd === 'number' ? ta.selectionEnd : start;
+  const v = ta.value;
+  ta.value = v.slice(0, start) + text + v.slice(end);
+  ta.selectionStart = ta.selectionEnd = start + text.length;
+  ta.focus();
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+  ta.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+/** Percorsi $json.* dal primo item (solo primo livello) per chip trascinabili */
+function jsonKeyPathsFromItems(items) {
+  const first = items?.[0]?.json;
+  if (!first || typeof first !== 'object') return [];
+  const out = [];
+  for (const k of Object.keys(first)) {
+    const safe = /^[a-zA-Z_$][\w$]*$/.test(k);
+    const path = safe ? `$json.${k}` : `$json[${JSON.stringify(k)}]`;
+    out.push({ key: k, expr: `={{ ${path} }}`, short: safe ? `$json.${k}` : `$json[…]` });
+  }
+  return out;
+}
+
+/** Output dell’ultima esecuzione sui soli parent di `toId` (solo anteprima pannello; non modifica `state.exec`). */
+function upstreamSnapshotOutputItems(toId) {
+  const ins = state.conns.filter(c => c.to === toId);
+  if (!ins.length) return null;
+  const sorted = [...ins].sort((a, b) => String(a.from).localeCompare(String(b.from)));
+  const merged = [];
+  for (const { from } of sorted) {
+    let out = state.exec.io[from]?.output;
+    if (!Array.isArray(out) || !out.length) {
+      const r = state.exec.res[from];
+      if (r?.status === 'ok' && Array.isArray(r.output) && r.output.length) out = r.output;
+    }
+    if (Array.isArray(out) && out.length) merged.push(...cloneItems(out));
+  }
+  return merged.length ? merged : null;
+}
+
+function buildIoSideColumnHtml(n, which) {
+  const io = state.exec.io[n.id];
+  const title0 = which === 'input' ? 'Input' : 'Output';
+
+  if (which === 'output') {
+    if (!io) {
+      const hasUp = !!upstreamSnapshotOutputItems(n.id);
+      const emptyBody = hasUp
+        ? '<strong style="font-size:12px">Nessun output</strong>Esegui il workflow per calcolare l’output di questo nodo. In colonna <strong>Input</strong> vedi l’anteprima dai nodi a monte.'
+        : '<strong style="font-size:12px">Nessun dato</strong>Esegui il workflow, poi riapri il nodo: qui compariranno JSON e chip da trascinare.';
+      return `
+      <div class="io-side-hdr">${title0}</div>
+      <div class="io-side-inner">
+        <div class="io-empty" style="padding:14px 8px;font-size:11px">${emptyBody}</div>
+      </div>`;
+    }
+    const items = io.output;
+    const cnt = (items ?? []).length;
+    const paths = jsonKeyPathsFromItems(items);
+    const chips = paths.length
+      ? `<div class="io-hint" style="margin:0">Trascina nel centro (<strong>Parametri</strong>) sui campi espressione:</div>
+         <div class="json-chips" role="list">${paths.map(p =>
+           `<span class="json-chip" draggable="true" role="listitem" data-chip="${encodeURIComponent(p.expr)}" title="${esc(p.expr)}">${esc(p.short)}</span>`
+         ).join('')}</div>`
+      : `<div class="io-hint" style="margin:0;font-size:10px">Nessuna chiave nel primo item.</div>`;
+    const errNote = io.error
+      ? `<div class="io-hint" style="border-color:var(--red);color:var(--red);margin:0">Errore: ${esc(io.error)}</div>` : '';
+    const jsonStr = JSON.stringify(items ?? [], null, 2);
+    return `
+    <div class="io-side-hdr">${title0} · ${cnt} item${cnt !== 1 ? 's' : ''}</div>
+    <div class="io-side-inner">
+      ${chips}
+      ${errNote}
+      <div class="io-pre-wrap io-pre-wrap--side"><pre class="io-pre" tabindex="0">${esc(jsonStr)}</pre></div>
+    </div>`;
+  }
+
+  let items = null;
+  let inferred = false;
+  if (io) items = io.input;
+  else {
+    const up = upstreamSnapshotOutputItems(n.id);
+    if (up) { items = up; inferred = true; }
+  }
+  if (!items || !items.length) {
+    return `
+      <div class="io-side-hdr">${title0}</div>
+      <div class="io-side-inner">
+        <div class="io-empty" style="padding:14px 8px;font-size:11px"><strong style="font-size:12px">Nessun dato</strong>Esegui il workflow, poi riapri il nodo: qui compariranno JSON e chip da trascinare.</div>
+      </div>`;
+  }
+  const cnt = items.length;
+  const hdr = inferred ? `${title0} · anteprima · ${cnt} item${cnt !== 1 ? 's' : ''}` : `${title0} · ${cnt} item${cnt !== 1 ? 's' : ''}`;
+  const inferredNote = inferred
+    ? `<div class="io-hint" style="margin:0 0 6px;border-left:2px solid var(--accent);padding-left:8px;font-size:10px;color:var(--muted)">Anteprima dall’output dei nodi collegati a monte (questo nodo non è stato eseguito nell’ultima corsa).</div>`
+    : '';
+  const paths = jsonKeyPathsFromItems(items);
+  const chips = paths.length
+    ? `<div class="io-hint" style="margin:0">Trascina nel centro (<strong>Parametri</strong>) sui campi espressione:</div>
+       <div class="json-chips" role="list">${paths.map(p =>
+         `<span class="json-chip" draggable="true" role="listitem" data-chip="${encodeURIComponent(p.expr)}" title="${esc(p.expr)}">${esc(p.short)}</span>`
+       ).join('')}</div>`
+    : `<div class="io-hint" style="margin:0;font-size:10px">Nessuna chiave nel primo item.</div>`;
+  const jsonStr = JSON.stringify(items ?? [], null, 2);
+  return `
+    <div class="io-side-hdr">${hdr}</div>
+    <div class="io-side-inner">
+      ${inferredNote}
+      ${chips}
+      <div class="io-pre-wrap io-pre-wrap--side"><pre class="io-pre" tabindex="0">${esc(jsonStr)}</pre></div>
+    </div>`;
+}
+function uid() { return crypto.randomUUID().split('-')[0]; }
+function nodeById(id) { return state.nodes.find(n => n.id === id); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function screenToWorld(clientX, clientY) {
+  const r = document.getElementById('canvas-area').getBoundingClientRect();
+  return {
+    x: (clientX - r.left - state.canvas.x) / state.canvas.zoom,
+    y: (clientY - r.top  - state.canvas.y) / state.canvas.zoom,
+  };
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════════════════════════════════════
+function render() {
+  renderTabs();
+  renderSidebar();
+  renderCanvas();
+  renderCfgPanel();
+  renderViews();
+  renderSistema();
+}
+
+// ── Tabs ──
+function renderTabs() {
+  document.querySelectorAll('.tab').forEach(t => {
+    const on = t.dataset.tab === state.tab;
+    t.classList.toggle('active', on);
+    t.setAttribute('aria-selected', on);
+  });
+}
+
+// ── Views visibility ──
+function renderViews() {
+  const execView = document.getElementById('exec-view');
+  const dtView   = document.getElementById('dt-view');
+  const sidebar  = document.getElementById('sidebar');
+
+  execView.classList.toggle('active', state.tab === 'executions');
+  dtView.classList.toggle('active',   state.tab === 'datatable');
+
+  sidebar.style.display = state.tab === 'editor' ? '' : 'none';
+
+  if (state.tab === 'executions') renderExecList();
+  if (state.tab === 'datatable')  renderDT();
+}
+
+// ── Canvas ──
+function renderCanvas() {
+  const world = document.getElementById('canvas-world');
+  world.style.transform = `translate(${state.canvas.x}px,${state.canvas.y}px) scale(${state.canvas.zoom})`;
+  document.getElementById('zoom-pct').textContent = Math.round(state.canvas.zoom * 100) + '%';
+  renderNodes();
+  renderConns();
+}
+
+function renderNodes() {
+  const layer = document.getElementById('nodes-layer');
+  const existing = new Set(state.nodes.map(n => n.id));
+  layer.querySelectorAll('.wf-node').forEach(el => {
+    if (!existing.has(el.dataset.nid)) el.remove();
+  });
+  state.nodes.forEach(n => {
+    let el = layer.querySelector(`[data-nid="${n.id}"]`);
+    if (!el) { el = document.createElement('div'); el.className = 'wf-node'; el.dataset.nid = n.id; layer.appendChild(el); }
+    paintNode(el, n);
+  });
+}
+
+function paintNode(el, n) {
+  const nt = ntByFullKey(n.type);
+  const res = state.exec.res[n.id];
+  el.style.left = n.pos[0] + 'px';
+  el.style.top  = n.pos[1] + 'px';
+  el.classList.toggle('selected',     state.sel === n.id);
+  el.classList.toggle('exec-running', state.exec.step === n.id);
+  el.classList.toggle('exec-ok',      res?.status === 'ok');
+  el.classList.toggle('exec-err',     res?.status === 'err');
+  el.classList.toggle('disabled',     !!n.disabled);
+
+  const cnt = res?.output?.length ?? null;
+  el.innerHTML = `
+    <div class="port port-in"  data-port="in"  data-nid="${n.id}" aria-label="Input port"></div>
+    <button type="button" class="node-kebab" aria-label="Menu azioni nodo" aria-haspopup="true" title="Azioni nodo">
+      <span class="node-kebab-dot" aria-hidden="true"></span><span class="node-kebab-dot" aria-hidden="true"></span><span class="node-kebab-dot" aria-hidden="true"></span>
+    </button>
+    <div class="node-hdr">
+      <div class="node-type-ic" style="background:${nt.color}22;color:${nt.color}" aria-hidden="true">${esc(nt.icon)}</div>
+      <div class="node-title">${esc(n.name)}</div>
+      <div class="node-badge">${res?.status==='ok'?cnt??'✓':'!'}</div>
+    </div>
+    <div class="node-body">
+      <div class="node-sub" style="color:${nt.color}">${esc(nt.label)}</div>
+      ${res?.status==='ok'  ? `<div class="node-items" style="color:var(--green)">${cnt} item${cnt!==1?'s':''}</div>` : ''}
+      ${res?.status==='err' ? `<div class="node-items" style="color:var(--red)">${esc(res.err)}</div>` : ''}
+    </div>
+    <div class="port port-out" data-port="out" data-nid="${n.id}" aria-label="Output port"></div>
+  `;
+}
+
+// ── Connections ──
+function renderConns() {
+  const g = document.getElementById('conns-g');
+  g.innerHTML = '';
+  state.conns.forEach((c, i) => {
+    const fn = nodeById(c.from), tn = nodeById(c.to);
+    if (!fn || !tn) return;
+    const x1 = fn.pos[0]+NW, y1 = fn.pos[1]+NH/2;
+    const x2 = tn.pos[0],    y2 = tn.pos[1]+NH/2;
+    const cx = Math.max(80, Math.abs(x2-x1)*.5);
+    const d  = `M${x1},${y1} C${x1+cx},${y1} ${x2-cx},${y2} ${x2},${y2}`;
+    const flowing = state.exec.running && state.exec.res[c.from]?.status==='ok';
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', d);
+    path.setAttribute('class', `conn-path${flowing?' flowing':''}`);
+    path.setAttribute('marker-end','url(#arr)');
+    path.dataset.ci = i;
+    path.style.pointerEvents = 'stroke';
+    path.setAttribute('tabindex','0');
+    path.setAttribute('aria-label',`Connessione da ${fn.name} a ${tn.name}`);
+    g.appendChild(path);
+  });
+
+  // Temp line
+  const tmp = document.getElementById('temp-path');
+  if (state.connecting.active) {
+    const {x1,y1,x2,y2} = state.connecting.tx;
+    const cx = Math.max(80, Math.abs(x2-x1)*.5);
+    tmp.setAttribute('d',`M${x1},${y1} C${x1+cx},${y1} ${x2-cx},${y2} ${x2},${y2}`);
+  } else {
+    tmp.setAttribute('d','');
+  }
+}
+
+// ══ SISTEMA ══════════════════════════════════════════════════════════════════
+
+function renderSistema() {
+  const panel = document.getElementById('sistema-panel');
+  const btn   = document.getElementById('sb-sistema-btn');
+  const s     = state.sistema;
+  panel.classList.toggle('open', s.open);
+  btn?.classList.toggle('active', s.open);
+  if (!s.open) return;
+
+  const { insert, check, update } = s.urls;
+  const allSet = insert.trim() && check.trim() && update.trim();
+  const c = s.collapsed;
+
+  panel.innerHTML = `
+    <div class="sist-hdr">
+      <div class="sist-hdr-icon">⚡</div>
+      <div style="flex:1">
+        <div class="sist-hdr-title">Sistema</div>
+        <div class="sist-hdr-sub">${allSet
+          ? '<span style="color:var(--green)">3 URL salvati · esecuzione locale (nessun fetch)</span>'
+          : 'Salva i 3 URL per abilitare i form (slug → Webhook; senza Webhook → ordine trigger)'}</div>
+      </div>
+      <button class="sist-close-btn" id="sist-close" aria-label="Chiudi sistema">✕</button>
+    </div>
+    <div class="sist-body">
+
+      <!-- URL config -->
+      <div class="sist-url-box${c.urls && allSet ? ' collapsed' : ''}">
+        <div class="sist-url-hdr" id="sist-tog-urls">
+          <span style="font-size:15px">🔗</span>
+          <span class="sist-url-hdr-title">Webhook URL</span>
+          <span class="sist-chevron">▼</span>
+        </div>
+        <div class="sist-url-fields">
+          <div class="fg" style="margin-bottom:0">
+            <label class="fl" style="font-size:10px">📥 Inserimento dati ticket</label>
+            <input class="fi" type="url" id="sist-url-insert" placeholder="https://your-n8n.app/webhook/…" value="${esc(insert)}" autocomplete="off" />
+          </div>
+          <div class="fg" style="margin-bottom:0">
+            <label class="fl" style="font-size:10px">🔍 Check stato &amp; avanzamento</label>
+            <input class="fi" type="url" id="sist-url-check" placeholder="https://your-n8n.app/webhook/…" value="${esc(check)}" autocomplete="off" />
+          </div>
+          <div class="fg" style="margin-bottom:0">
+            <label class="fl" style="font-size:10px">🔄 Aggiornamento avanzamento</label>
+            <input class="fi" type="url" id="sist-url-update" placeholder="https://your-n8n.app/webhook/…" value="${esc(update)}" autocomplete="off" />
+          </div>
+          <button class="btn btn-accent btn-sm" id="sist-save-urls" style="width:100%;margin-top:4px">
+            Salva URL
+          </button>
+          <p class="io-hint" style="margin:0;font-size:10px;line-height:1.45">
+            Gli URL <strong>non</strong> chiamano la rete. Con nodi <strong>Webhook</strong>: slug dopo <code>/webhook/</code> = campo «Slug URL» del nodo; se non combacia, vale l’ordine dei Webhook da sinistra (1° inserimento, 2° check, 3° aggiornamento). <strong>Senza Webhook</strong> (es. solo Form trigger): stesso ordine sui <strong>trigger</strong> da sinistra.
+          </p>
+        </div>
+      </div>
+
+      ${allSet ? sistemaCards(c) : `
+        <div class="io-hint" style="text-align:center">
+          <strong>Inserisci i 3 URL</strong> (come su n8n) e clicca <strong>Salva URL</strong>.<br>I form eseguiranno il workflow in questo file, senza <code>localhost</code>.
+        </div>`}
+    </div>`;
+}
+
+function sistemaCards(c) {
+  return `
+    <!-- Card 1 — Inserisci Ticket -->
+    <div class="sist-card${c.insert ? ' collapsed' : ''}" id="sist-card-insert">
+      <div class="sist-card-hdr" data-sist-tog="insert">
+        <span class="sist-card-icon">📥</span>
+        <span class="sist-card-title">Inserisci Ticket</span>
+        <span class="sist-card-arrow">▼</span>
+      </div>
+      <div class="sist-card-body">
+        <div class="sist-card-actions">
+          <div class="row2" style="gap:10px">
+            <div class="fg" style="margin-bottom:0"><label class="fl" style="font-size:10px">Nome</label><input class="fi" id="sist-ins-nome" placeholder="Mario Rossi"/></div>
+            <div class="fg" style="margin-bottom:0"><label class="fl" style="font-size:10px">Email</label><input class="fi" type="email" id="sist-ins-email" placeholder="mario@scuola.it"/></div>
+          </div>
+          <div class="row2" style="gap:10px">
+            <div class="fg" style="margin-bottom:0">
+              <label class="fl" style="font-size:10px">Categoria</label>
+              <select class="fi fs" id="sist-ins-cat">
+                <option>Hardware</option><option>Software</option><option>Rete</option><option>Account</option><option>Altro</option>
+              </select>
+            </div>
+            <div class="fg" style="margin-bottom:0">
+              <label class="fl" style="font-size:10px">Priorità</label>
+              <select class="fi fs" id="sist-ins-pri">
+                <option>Bassa</option><option selected>Media</option><option>Alta</option><option>Critica</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg" style="margin-bottom:0"><label class="fl" style="font-size:10px">Problema</label><textarea class="fi" id="sist-ins-prob" rows="2" placeholder="Descrivi il problema…" style="resize:vertical;min-height:52px"></textarea></div>
+          <button class="btn btn-accent btn-sm" id="sist-ins-submit" style="width:100%">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Invia Ticket
+          </button>
+          <div class="sist-spinner-wrap" id="sist-ins-spin"><div class="spinner" style="margin:0 auto"></div></div>
+        </div>
+        <div class="sist-resp" id="sist-ins-resp"></div>
+      </div>
+    </div>
+
+    <!-- Card 2 — Controlla Stato -->
+    <div class="sist-card${c.check ? ' collapsed' : ''}" id="sist-card-check">
+      <div class="sist-card-hdr" data-sist-tog="check">
+        <span class="sist-card-icon">🔍</span>
+        <span class="sist-card-title">Controlla Stato Ticket</span>
+        <span class="sist-card-arrow">▼</span>
+      </div>
+      <div class="sist-card-body">
+        <div class="sist-card-actions">
+          <div class="fg" style="margin-bottom:0"><label class="fl" style="font-size:10px">Ticket ID</label><input class="fi" id="sist-chk-id" placeholder="TCK-0001"/></div>
+          <button class="btn btn-accent btn-sm" id="sist-chk-submit" style="width:100%">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            Controlla
+          </button>
+          <div class="sist-spinner-wrap" id="sist-chk-spin"><div class="spinner" style="margin:0 auto"></div></div>
+        </div>
+        <div class="sist-resp" id="sist-chk-resp"></div>
+      </div>
+    </div>
+
+    <!-- Card 3 — Aggiorna Avanzamento -->
+    <div class="sist-card${c.update ? ' collapsed' : ''}" id="sist-card-update">
+      <div class="sist-card-hdr" data-sist-tog="update">
+        <span class="sist-card-icon">🔄</span>
+        <span class="sist-card-title">Aggiorna Avanzamento</span>
+        <span class="sist-card-arrow">▼</span>
+      </div>
+      <div class="sist-card-body">
+        <div class="sist-card-actions">
+          <div class="row2" style="gap:10px">
+            <div class="fg" style="margin-bottom:0"><label class="fl" style="font-size:10px">Ticket ID</label><input class="fi" id="sist-upd-id" placeholder="TCK-0001"/></div>
+            <div class="fg" style="margin-bottom:0">
+              <label class="fl" style="font-size:10px">Nuovo stato</label>
+              <select class="fi fs" id="sist-upd-stato">
+                <option>Aperto</option><option>In lavorazione</option><option>In attesa</option><option>Risolto</option><option>Chiuso</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg" style="margin-bottom:0"><label class="fl" style="font-size:10px">Note avanzamento</label><textarea class="fi" id="sist-upd-note" rows="2" placeholder="Descrivi l'avanzamento…" style="resize:vertical;min-height:52px"></textarea></div>
+          <button class="btn btn-accent btn-sm" id="sist-upd-submit" style="width:100%">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Aggiorna
+          </button>
+          <div class="sist-spinner-wrap" id="sist-upd-spin"><div class="spinner" style="margin:0 auto"></div></div>
+        </div>
+        <div class="sist-resp" id="sist-upd-resp"></div>
+      </div>
+    </div>`;
+}
+
+function webhooksSorted() {
+  return state.nodes
+    .filter(n => n.type === 'n8n-nodes-base.webhook' && !n.disabled)
+    .sort((a, b) => a.pos[0] - b.pos[0] || a.pos[1] - b.pos[1]);
+}
+
+/** Tutti i trigger (Form, Webhook, Manual, …) ordinati come sul canvas — usato da Sistema se non ci sono Webhook. */
+function sistemaTriggersSorted() {
+  return state.nodes
+    .filter(n => ntByFullKey(n.type).isTrigger && !n.disabled)
+    .sort((a, b) => a.pos[0] - b.pos[0] || a.pos[1] - b.pos[1]);
+}
+
+/** Ultimo segmento dopo un path segment che contiene "webhook" (es. …/webhook/56ded27c → 56ded27c). */
+function slugFromUserWebhookUrl(url) {
+  const raw = (url || '').trim();
+  if (!raw) return '';
+  try {
+    const withProto = /^https?:\/\//i.test(raw) ? raw : `http://${raw.replace(/^\/+/, '')}`;
+    const u = new URL(withProto);
+    const parts = u.pathname.split('/').filter(Boolean);
+    for (let i = 0; i < parts.length; i++) {
+      if (String(parts[i]).toLowerCase().includes('webhook') && parts[i + 1])
+        return decodeURIComponent(parts[i + 1]);
+    }
+    return parts.length ? decodeURIComponent(parts[parts.length - 1]) : '';
+  } catch {
+    const seg = raw.split('/').filter(Boolean);
+    return seg.length ? seg[seg.length - 1] : '';
+  }
+}
+
+/**
+ * Sceglie il nodo da cui partire in Sistema:
+ * - se ci sono Webhook: slug URL ↔ `webhookPath`, altrimenti ordine Webhook da sinistra (1°/2°/3°);
+ * - se non ci sono Webhook: stesso indice sui trigger (es. tre Form trigger come nel JSON importato).
+ */
+function resolveSistemaTrigger(phase, url) {
+  const idx = phase === 'insert' ? 0 : phase === 'check' ? 1 : 2;
+  const slug = slugFromUserWebhookUrl(url);
+  const wh = webhooksSorted();
+  if (wh.length) {
+    if (slug) {
+      const bySlug = wh.find(n => (n.p.webhookPath || '').trim() === slug);
+      if (bySlug) return bySlug;
+    }
+    return wh[Math.min(idx, wh.length - 1)];
+  }
+  const trigs = sistemaTriggersSorted();
+  if (!trigs.length) return null;
+  return trigs[Math.min(idx, trigs.length - 1)];
+}
+
+/** Esegue il workflow in sandbox (nessun fetch): stesso motore di «Esegui», payload come POST webhook. */
+async function sistemaLocalExecute(phase, bodyObj, spinId, respId) {
+  const url = phase === 'insert' ? state.sistema.urls.insert : phase === 'check' ? state.sistema.urls.check : state.sistema.urls.update;
+  const spin = document.getElementById(spinId);
+  const resp = document.getElementById(respId);
+  if (!String(url || '').trim()) {
+    if (resp) {
+      resp.className = 'sist-resp show err';
+      resp.innerHTML = `<div class="sist-resp-lbl">Errore</div>${esc('Salva un URL webhook per questa azione.')}`;
+    }
+    return;
+  }
+  const trigger = resolveSistemaTrigger(phase, url);
+  if (!trigger) {
+    if (resp) {
+      resp.className = 'sist-resp show err';
+      resp.innerHTML = `<div class="sist-resp-lbl">Errore</div>${esc('Nel workflow serve almeno un trigger (Form trigger, Webhook, Manual…). Salva di nuovo i 3 URL e riprova.')}`;
+    }
+    return;
+  }
+
+  if (spin) spin.classList.add('show');
+  if (resp) resp.className = 'sist-resp';
+
+  const items = [{ json: { ...bodyObj } }];
+  const execRes = await executeWorkflow(trigger.id, { fixedItems: items, quiet: true });
+
+  if (spin) spin.classList.remove('show');
+  if (resp) {
+    const slug = slugFromUserWebhookUrl(url);
+    const payload = {
+      _nota: 'Nessuna chiamata HTTP: esecuzione locale del canvas (come «Esegui»), con corpo JSON come da webhook / form.',
+      triggerSandbox: trigger.name,
+      slugURL: slug || '(nessun match: usato ordine Webhook sul canvas)',
+      ultimoNodo: execRes.lastNodeName,
+      outputItems: execRes.output,
+      primoItemJson: execRes.output?.[0]?.json ?? null,
+    };
+    if (!execRes.ok) {
+      resp.className = 'sist-resp show err';
+      resp.innerHTML = `<div class="sist-resp-lbl">Errore esecuzione</div>${esc(JSON.stringify(payload, null, 2))}`;
+    } else {
+      resp.className = 'sist-resp show ok';
+      resp.innerHTML = `<div class="sist-resp-lbl">Risposta (sandbox)</div>${esc(JSON.stringify(payload, null, 2))}`;
+    }
+  }
+}
+
+// ── Sidebar ──
+function renderSidebar() {
+  const search = document.getElementById('sb-search')?.value?.toLowerCase() ?? '';
+  let html = '';
+  Object.entries(CATS).forEach(([cat, ci]) => {
+    const items = Object.values(NT)
+      .filter(n => n.cat === cat)
+      .filter(n => !search || n.label.toLowerCase().includes(search) || n.desc.toLowerCase().includes(search));
+    if (!items.length) return;
+    const open = state.catOpen[cat] !== false;
+    html += `<div class="cat-hdr" data-toggle-cat="${cat}">
+      <span class="cat-arrow${open?' open':''}">▶</span>
+      <span>${ci.icon} ${cat}</span>
+      <span style="margin-left:auto;font-size:10px">${items.length}</span>
+    </div>`;
+    if (open) {
+      html += items.map(nt => `
+        <div class="node-item" draggable="true" data-drag-type="${nt.key}" title="${esc(nt.desc)}">
+          <div class="ni-icon" style="background:${nt.color}20;color:${nt.color}" aria-hidden="true">${esc(nt.icon)}</div>
+          <div class="ni-info">
+            <div class="ni-name">${esc(nt.label)}</div>
+            <div class="ni-desc">${esc(nt.desc)}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+  });
+  document.getElementById('sb-body').innerHTML = html;
+}
+
+// ── Config Panel ──
+function renderCfgPanel() {
+  const panel = document.getElementById('cfg-panel');
+  if (!state.panel.open || !state.panel.id) {
+    panel.classList.remove('open', 'cfg-panel--triple');
+    return;
+  }
+  const n = nodeById(state.panel.id);
+  if (!n) { panel.classList.remove('open', 'cfg-panel--triple'); return; }
+  panel.classList.add('open');
+
+  if (state.panel.tab === 'input' || state.panel.tab === 'output') state.panel.tab = 'params';
+
+  const hasIo = !!state.exec.io[n.id] || !!upstreamSnapshotOutputItems(n.id);
+  panel.classList.toggle('cfg-panel--triple', hasIo);
+
+  const left = document.getElementById('cp-io-left');
+  const right = document.getElementById('cp-io-right');
+  if (left && right) {
+    if (hasIo) {
+      left.hidden = false;
+      right.hidden = false;
+      left.innerHTML = buildIoSideColumnHtml(n, 'input');
+      right.innerHTML = buildIoSideColumnHtml(n, 'output');
+    } else {
+      left.hidden = true;
+      right.hidden = true;
+      left.innerHTML = '';
+      right.innerHTML = '';
+    }
+  }
+
+  const nt = ntByFullKey(n.type);
+  const icon = document.getElementById('cp-icon');
+  icon.textContent = nt.icon;
+  icon.style.background = nt.color+'20';
+  icon.style.color = nt.color;
+  document.getElementById('cp-name').textContent = n.name;
+  document.getElementById('cp-type').textContent = nt.label;
+
+  document.querySelectorAll('.cp-tab').forEach(t => {
+    const on = t.dataset.ptab === state.panel.tab;
+    t.classList.toggle('active', on);
+    t.setAttribute('aria-selected', on);
+  });
+
+  renderPanelBody(n, nt);
+}
+
+function renderPanelBody(n, nt) {
+  const body = document.getElementById('cp-body');
+  if (state.panel.tab === 'params')   { body.innerHTML = buildParams(n); attachParamEvents(n); }
+  else if (state.panel.tab === 'settings') { body.innerHTML = buildSettings(n); }
+  else { body.innerHTML = buildNotes(n); attachNotesEvents(n); }
+}
+
+// ── Panel builders ──
+function buildParams(n) {
+  const p = n.p;
+  let h = `
+    <div class="fg">
+      <label class="fl" for="np-name">Nome nodo</label>
+      <div class="fi-wrap"><input class="fi" id="np-name" data-pp="__name" value="${esc(n.name)}" /></div>
+    </div>
+    <div class="sep"></div>
+  `;
+
+  if (n.type === 'n8n-nodes-base.formTrigger') h += buildFormTriggerP(p);
+  else if (n.type === 'n8n-nodes-base.webhook')   h += buildWebhookP(p);
+  else if (n.type === 'n8n-nodes-base.code')       h += buildCodeP(p);
+  else if (n.type === 'n8n-nodes-base.dataTable')   h += buildDataTableP(n, p);
+  else if (n.type === 'n8n-nodes-base.form')        h += buildFormRespP(n, p);
+  else if (n.type === 'n8n-nodes-base.httpRequest') h += buildHttpP(p);
+  else if (n.type === 'n8n-nodes-base.emailSend')   h += buildEmailP(p);
+  else if (n.type === 'n8n-nodes-base.if')          h += buildIfP(p);
+  else if (n.type === 'n8n-nodes-base.set')         h += buildSetP(p);
+  else h += `<div style="color:var(--muted);font-size:12px;text-align:center;padding:20px 0">Nessun parametro disponibile</div>`;
+  return h;
+}
+
+function buildWebhookP(p) {
+  const path = p.webhookPath ?? '';
+  return `
+    <div class="fg">
+      <label class="fl" for="wh-path">Slug URL (dopo /webhook/)</label>
+      <input class="fi" id="wh-path" data-pp="webhookPath" value="${esc(path)}" placeholder="es. 56ded27c" autocomplete="off" />
+      <div class="hint-box" style="margin-top:8px">
+        <div class="hint-box-txt">Nel pannello <strong>Sistema</strong> gli URL che inserisci devono avere lo <strong>stesso slug</strong> di questo campo, così il sandbox sa quale nodo Webhook usare. Se lasci vuoto, conta l’ordine dei Webhook sul canvas (1° = inserimento, 2° = check, 3° = aggiornamento).</div>
+      </div>
+    </div>`;
+}
+
+function buildFormTriggerP(p) {
+  const fields = p.formFields ?? [];
+  return `
+    <div class="fg">
+      <label class="fl req" for="ft-title">Titolo form</label>
+      <div class="fi-wrap">
+        <input class="fi" id="ft-title" data-pp="formTitle" value="${esc(p.formTitle??'')}" />
+        <button class="expr-toggle" data-et="formTitle" title="Attiva modalità espressione">=</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl" for="ft-desc">Descrizione</label>
+      <input class="fi" id="ft-desc" data-pp="formDescription" value="${esc(p.formDescription??'')}" style="padding-right:9px" />
+    </div>
+    <div class="fg">
+      <label class="fl">Campi del form</label>
+      <div class="arr-list" id="ff-list">
+        ${fields.map((f,i) => `
+          <div class="arr-item" data-ffi="${i}">
+            <div class="arr-item-hdr">
+              <span class="arr-item-lbl">Campo ${i+1}</span>
+              <button class="arr-rm" data-rm-ff="${i}" aria-label="Rimuovi campo ${i+1}">×</button>
+            </div>
+            <div class="row2" style="margin-bottom:7px">
+              <div class="fg" style="margin-bottom:0">
+                <label class="fl" style="font-size:9.5px">Etichetta</label>
+                <input class="fi" style="padding-right:9px" data-ffi="${i}" data-ffk="fieldLabel" value="${esc(f.fieldLabel??'')}" aria-label="Etichetta campo ${i+1}" />
+              </div>
+              <div class="fg" style="margin-bottom:0">
+                <label class="fl" style="font-size:9.5px">Nome ID</label>
+                <input class="fi" style="padding-right:9px" data-ffi="${i}" data-ffk="fieldName"  value="${esc(f.fieldName??'')}" aria-label="Nome ID campo ${i+1}" />
+              </div>
+            </div>
+            <div class="fg" style="margin-bottom:0">
+              <label class="fl" style="font-size:9.5px">Tipo</label>
+              <select class="fs" data-ffi="${i}" data-ffk="fieldType" aria-label="Tipo campo ${i+1}">
+                ${['text','email','number','select','multiselect','date','file'].map(t =>
+                  `<option value="${t}" ${(f.fieldType||'text')===t?'selected':''}>${t}</option>`
+                ).join('')}
+              </select>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="add-item-btn" id="add-ff" aria-label="Aggiungi campo form">+ Aggiungi campo</button>
+    </div>
+    <div class="fg">
+      <label class="fl" for="ft-mode">Modalità risposta</label>
+      <select class="fs" id="ft-mode" data-pp="responseMode">
+        <option value="lastNode"     ${(p.responseMode??'lastNode')==='lastNode'?'selected':''}>Risposta dall'ultimo nodo</option>
+        <option value="onReceived"   ${p.responseMode==='onReceived'?'selected':''}>Risposta immediata</option>
+        <option value="responseNode" ${p.responseMode==='responseNode'?'selected':''}>Nodo di risposta</option>
+      </select>
+    </div>
+    <div class="hint-box">
+      <div class="hint-box-ttl">🔗 Webhook URL</div>
+      <div style="font-family:monospace;font-size:11px;color:var(--accent);word-break:break-all">
+        http://localhost:5678/webhook/${uid()}
+      </div>
+    </div>
+  `;
+}
+
+function buildCodeP(p) {
+  return `
+    <div class="fg">
+      <label class="fl" for="code-lang">Linguaggio</label>
+      <select class="fs" id="code-lang" data-pp="language">
+        <option value="javaScript" ${(p.language??'javaScript')==='javaScript'?'selected':''}>JavaScript</option>
+        <option value="python"     ${p.language==='python'?'selected':''}>Python</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label class="fl" for="code-body">Codice</label>
+      <div class="hint-box" style="margin-bottom:8px">
+        <div class="hint-box-txt">
+          Variabili: <code>$json</code>, <code>$input.all()</code>, <code>$input.first()</code><br>
+          Output: <code>return [{ json: {...} }]</code> — sempre un array
+        </div>
+      </div>
+      <textarea class="code-ta" id="code-body" data-pp="jsCode" rows="14" spellcheck="false" data-drop-expr="1">${esc(p.jsCode??'')}</textarea>
+    </div>
+  `;
+}
+
+/** Opzioni select per colonna mappata: schema + chiavi extra; disabilita colonne già usate altrove. */
+function dtMapColumnSelectHtml(mapping, currentCol) {
+  const m = mapping || {};
+  const used = new Set(Object.keys(m));
+  const schema = state.dt.cols;
+  const extras = Object.keys(m).filter(k => !schema.includes(k));
+  const ordered = [...new Set([...extras, ...schema, ...(currentCol ? [currentCol] : [])])];
+  let html = '';
+  for (const cn of ordered) {
+    const isCurrent = cn === currentCol;
+    const isTaken = used.has(cn) && !isCurrent;
+    html += `<option value="${esc(cn)}"${isCurrent ? ' selected' : ''}${isTaken ? ' disabled' : ''}>${esc(cn)}${isTaken ? ' (già mappata)' : ''}</option>`;
+  }
+  return html;
+}
+
+/** Select «Campo chiave» filtro: vuoto + colonne schema (e valore legacy se fuori schema). */
+function dtFilterKeySelectHtml(selectedKey) {
+  const sel = (selectedKey ?? '').trim();
+  const opts = [`<option value=""${!sel ? ' selected' : ''}>— Scegli colonna filtro —</option>`];
+  if (sel && !state.dt.cols.includes(sel))
+    opts.push(`<option value="${esc(sel)}" selected>${esc(sel)}</option>`);
+  for (const c of state.dt.cols) {
+    opts.push(`<option value="${esc(c)}"${c === sel ? ' selected' : ''}>${esc(c)}</option>`);
+  }
+  return opts.join('');
+}
+
+function buildDataTableP(n, p) {
+  const op  = p.operation ?? 'insert';
+  if (!p.mapping || typeof p.mapping !== 'object') p.mapping = {};
+  const map = p.mapping;
+  const rows = state.dt.rows.length;
+  const entries = Object.entries(map);
+  const mapHint = entries.length === 0
+    ? `<p class="io-hint" style="margin:0 0 10px"><strong>Nessuna riga di mappatura</strong> (qui non si parla delle righe dati in tabella). Clicca <strong>+ Aggiungi colonna</strong> oppure trascina le chip da <strong>Input</strong> (a sinistra, dopo un’esecuzione) nei campi espressione.</p>`
+    : '';
+  const mapEditor = (op === 'insert' || op === 'update') ? `
+    <div class="fg" id="dt-map-block">
+      <label class="fl">Mappatura colonne → valore</label>
+      ${mapHint}
+      <div class="dt-map-list" id="dt-map-list">
+        ${entries.map(([col, val]) => `
+          <div class="arr-item dt-map-row">
+            <div class="row2">
+              <div class="fg" style="margin-bottom:0">
+                <label class="fl" style="font-size:9px">Colonna tabella</label>
+                <select class="fi fs dt-map-col" style="padding-right:8px" title="Scegli la colonna da valorizzare">${dtMapColumnSelectHtml(map, col)}</select>
+              </div>
+              <div class="fg" style="margin-bottom:0">
+                <label class="fl" style="font-size:9px">Valore / espressione</label>
+                <textarea class="expr-box dt-map-val" rows="2" spellcheck="false" data-drop-expr="1">${esc(val)}</textarea>
+              </div>
+            </div>
+            <button type="button" class="dt-map-rm-btn" data-dt-map-rm="1" aria-label="Rimuovi questa riga di mappatura"><span class="dt-map-rm-x" aria-hidden="true">×</span><span>Rimuovi</span></button>
+          </div>`).join('')}
+      </div>
+      <button type="button" class="add-item-btn" id="dt-map-add">+ Aggiungi colonna</button>
+    </div>` : '';
+  return `
+    <div class="fg">
+      <label class="fl req" for="dt-op">Operazione</label>
+      <select class="fs" id="dt-op" data-pp="operation">
+        <option value="insert"  ${op==='insert' ?'selected':''}>Inserisci riga</option>
+        <option value="get"     ${op==='get'    ?'selected':''}>Ottieni riga/righe</option>
+        <option value="update"  ${op==='update' ?'selected':''}>Aggiorna riga/righe</option>
+        <option value="delete"  ${op==='delete' ?'selected':''}>Elimina riga/righe</option>
+        <option value="getAll"  ${op==='getAll' ?'selected':''}>Ottieni tutte le righe</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label class="fl">Tabella</label>
+      <div style="background:var(--surface3);border-radius:var(--r-sm);padding:8px 10px;display:flex;align-items:center;gap:9px">
+        <span style="font-size:16px" aria-hidden="true">🗄️</span>
+        <div>
+          <div style="font-size:12.5px;font-weight:700">Esercitazione</div>
+          <div style="font-size:10.5px;color:var(--muted)">Schema: <strong style="color:var(--text)">${state.dt.cols.length}</strong> colonne · Dati: <strong style="color:var(--text)">${rows}</strong> rig${rows!==1?'he':'a'} salvat${rows!==1?'e':'a'}</div>
+        </div>
+      </div>
+    </div>
+    ${(op==='get'||op==='update'||op==='delete') ? `
+      <div class="fg">
+        <label class="fl">Filtro</label>
+        <div class="arr-item">
+          <div class="row2">
+            <div>
+              <label class="fl" style="font-size:9.5px">Campo chiave</label>
+              <select class="fi fs" data-pp="filterKey" title="Colonna della tabella su cui filtrare">${dtFilterKeySelectHtml(p.filterKey)}</select>
+            </div>
+            <div>
+              <label class="fl" style="font-size:9.5px">Valore (espressione)</label>
+              <textarea class="expr-box" data-pp="filterVal" rows="2" spellcheck="false" data-drop-expr="1" placeholder="es. {{ $json.ticket_id }} oppure ={{ $json.campo }}">${esc(p.filterVal ?? '')}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    ` : ''}
+    ${mapEditor}
+  `;
+}
+
+function buildFormRespP(n, p) {
+  const msg   = p.completionMessage ?? '';
+  const isExp = msg.startsWith('=');
+  const sampleJson = state.exec.io[n.id]?.input?.[0]?.json
+    ?? state.exec.io[n.id]?.output?.[0]?.json
+    ?? upstreamSnapshotOutputItems(n.id)?.[0]?.json
+    ?? { ticket_id: 'TCK-0001', stato: 'Aperto', nome: 'Mario', email: 'esempio@scuola.it' };
+  let previewBody = msg;
+  if (isExp) {
+    try { previewBody = String(resolve(msg, sampleJson) ?? ''); }
+    catch { previewBody = msg.slice(1); }
+  }
+  return `
+    <div class="fg">
+      <label class="fl req" for="fr-title">Titolo completamento</label>
+      <div class="fi-wrap">
+        <input class="fi" id="fr-title" data-pp="completionTitle" value="${esc(p.completionTitle??'')}" />
+        <button class="expr-toggle${isExp?' on':''}" data-et="completionTitle" title="Modalità espressione">=</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl">Messaggio</label>
+      <div style="display:flex;gap:6px;margin-bottom:7px;align-items:center">
+        <span style="font-size:11px;color:var(--muted)">Modalità:</span>
+        <button class="btn btn-ghost btn-sm${!isExp?' active':''}" data-msgmode="fixed" style="${!isExp?'border-color:var(--accent);color:var(--accent)':''}">Testo</button>
+        <button class="btn btn-ghost btn-sm${isExp?' active':''}"  data-msgmode="expr"  style="${isExp?'border-color:var(--accent);color:var(--accent)':''}">Espressione</button>
+      </div>
+      ${isExp
+        ? `<textarea class="expr-box" data-pp="completionMessage" rows="4" spellcheck="false" data-drop-expr="1">${esc(msg)}</textarea>
+           <div class="expr-hint">Nel testo puoi usare <code>{{ $json.campo }}</code> oppure <code>={{ $json.campo }}</code> (con <code>=</code> davanti a <code>{{</code>).</div>`
+        : `<textarea class="fta" data-pp="completionMessage" rows="4" data-drop-expr="1">${esc(msg)}</textarea>`
+      }
+    </div>
+    <div class="sep"></div>
+    <div class="fg">
+      <label class="fl">👁 Anteprima</label>
+      <div class="hint-box" style="margin-bottom:8px;font-size:10.5px">${state.exec.io[n.id] ? 'Usa dati Input di questo nodo dall’ultima esecuzione.' : upstreamSnapshotOutputItems(n.id) ? 'Anteprima dai dati a monte (ultima esecuzione sui nodi collegati).' : 'Nessuna esecuzione: anteprima con JSON di esempio (ticket_id, stato, …).'}</div>
+      <div class="preview-box">
+        <div class="preview-title">${esc(p.completionTitle??'Completamento')}</div>
+        <div class="preview-msg">${esc(previewBody)}</div>
+      </div>
+    </div>
+  `;
+}
+
+function buildHttpP(p) {
+  return `
+    <div class="fg">
+      <label class="fl" for="http-m">Metodo</label>
+      <select class="fs" id="http-m" data-pp="method">
+        ${['GET','POST','PUT','PATCH','DELETE'].map(m =>
+          `<option value="${m}" ${(p.method??'GET')===m?'selected':''}>${m}</option>`).join('')}
+      </select>
+    </div>
+    <div class="fg">
+      <label class="fl req" for="http-url">URL</label>
+      <div class="fi-wrap">
+        <input class="fi" id="http-url" data-pp="url" value="${esc(p.url??'')}" placeholder="https://api.example.com/data" />
+        <button class="expr-toggle" data-et="url" title="Espressione">=</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl" for="http-ct">Tipo contenuto</label>
+      <select class="fs" id="http-ct" data-pp="contentType">
+        <option value="json">JSON</option><option value="form">Form Data</option><option value="raw">Raw</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label class="fl" for="http-body">Body (JSON)</label>
+      <textarea class="code-ta" id="http-body" data-pp="body" rows="6" placeholder='{\n  "key": "value"\n}'>${esc(p.body??'')}</textarea>
+    </div>
+  `;
+}
+
+function buildEmailP(p) {
+  return `
+    <div class="fg"><label class="fl req">A</label><div class="fi-wrap"><input class="fi" data-pp="toEmail" value="${esc(p.toEmail??'')}" placeholder="user@example.com" /><button class="expr-toggle" data-et="toEmail">=</button></div></div>
+    <div class="fg"><label class="fl req">Oggetto</label><div class="fi-wrap"><input class="fi" data-pp="subject" value="${esc(p.subject??'')}" /><button class="expr-toggle" data-et="subject">=</button></div></div>
+    <div class="fg"><label class="fl">Testo</label><textarea class="fta" data-pp="text" rows="4">${esc(p.text??'')}</textarea></div>
+    <div class="fg"><label class="fl">HTML</label><textarea class="code-ta" data-pp="html" rows="5">${esc(p.html??'')}</textarea></div>
+  `;
+}
+
+function buildIfP(p) {
+  const conds = p.conditions ?? [{ leftValue:'', op:'equals', rightValue:'' }];
+  return `
+    <div class="fg">
+      <label class="fl">Condizioni (AND)</label>
+      <div class="arr-list" id="if-conds">
+        ${conds.map((c,i) => `
+          <div class="arr-item" data-cdi="${i}">
+            <div class="arr-item-hdr">
+              <span class="arr-item-lbl">Condizione ${i+1}</span>
+              <button class="arr-rm" data-rm-cd="${i}" aria-label="Rimuovi condizione">×</button>
+            </div>
+            <div class="fg" style="margin-bottom:6px">
+              <label class="fl" style="font-size:9.5px">Valore sinistro</label>
+              <div class="fi-wrap"><input class="fi" data-cdi="${i}" data-cdk="leftValue" value="${esc(c.leftValue)}" /><button class="expr-toggle" data-et="lv${i}">=</button></div>
+            </div>
+            <div class="fg" style="margin-bottom:6px">
+              <label class="fl" style="font-size:9.5px">Operatore</label>
+              <select class="fs" data-cdi="${i}" data-cdk="op">
+                ${['equals','notEquals','contains','startsWith','endsWith','gt','lt','gte','lte'].map(o =>
+                  `<option value="${o}" ${c.op===o?'selected':''}>${o}</option>`).join('')}
+              </select>
+            </div>
+            <div class="fg" style="margin-bottom:0">
+              <label class="fl" style="font-size:9.5px">Valore destro</label>
+              <input class="fi" style="padding-right:9px" data-cdi="${i}" data-cdk="rightValue" value="${esc(c.rightValue)}" />
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="add-item-btn" id="add-cond">+ Aggiungi condizione</button>
+    </div>
+  `;
+}
+
+function buildSetP(p) {
+  const fields = p.fields ?? [{ name:'', value:'' }];
+  return `
+    <div class="fg">
+      <label class="fl">Campi da impostare</label>
+      <div class="arr-list" id="set-fields">
+        ${fields.map((f,i) => `
+          <div class="arr-item" data-sfi="${i}">
+            <div class="arr-item-hdr">
+              <span class="arr-item-lbl">Campo ${i+1}</span>
+              <button class="arr-rm" data-rm-sf="${i}" aria-label="Rimuovi campo">×</button>
+            </div>
+            <div class="row2">
+              <div><label class="fl" style="font-size:9.5px">Nome</label><input class="fi" style="padding-right:9px" data-sfi="${i}" data-sfk="name" value="${esc(f.name)}" /></div>
+              <div><label class="fl" style="font-size:9.5px">Valore</label><div class="fi-wrap"><input class="fi" data-sfi="${i}" data-sfk="value" value="${esc(f.value)}" /><button class="expr-toggle" data-et="sf${i}">=</button></div></div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="add-item-btn" id="add-sf">+ Aggiungi campo</button>
+    </div>
+  `;
+}
+
+function buildSettings(n) {
+  return `
+    <div class="fg">
+      <label class="fl" for="s-err">Comportamento in caso di errore</label>
+      <select class="fs" id="s-err">
+        <option>Ferma l'esecuzione del workflow</option>
+        <option>Continua con il nodo successivo</option>
+        <option>Continua (includi output con errore)</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label class="fl" for="s-retry">Numero di retry</label>
+      <input class="fi" id="s-retry" type="number" value="0" min="0" max="10" style="padding-right:9px" />
+    </div>
+    <div class="fg">
+      <label class="fl" for="s-timeout">Timeout (secondi)</label>
+      <input class="fi" id="s-timeout" type="number" placeholder="Nessun timeout" style="padding-right:9px" />
+    </div>
+    <div class="sep"></div>
+    <div class="fg">
+      <div class="toggle-row">
+        <label class="fl" style="margin-bottom:0">Nodo disabilitato</label>
+        <label><input type="checkbox" id="s-disabled" ${n.disabled?'checked':''} aria-label="Disabilita nodo" /><span style="font-size:12px;color:var(--muted);margin-left:6px">${n.disabled?'Sì':'No'}</span></label>
+      </div>
+    </div>
+    <div class="fg">
+      <div class="toggle-row">
+        <label class="fl" style="margin-bottom:0">Sempre esegui (bypass errori upstream)</label>
+        <label><input type="checkbox" aria-label="Bypass errori" /><span style="font-size:12px;color:var(--muted);margin-left:6px">No</span></label>
+      </div>
+    </div>
+    <div class="hint-box" style="margin-top:12px">
+      <div class="hint-box-ttl">ℹ ID Nodo</div>
+      <div style="font-family:monospace;font-size:11px;color:var(--accent)">${n.id}</div>
+    </div>
+  `;
+}
+
+function buildNotes(n) {
+  return `
+    <div class="fg">
+      <label class="fl" for="note-ta">Nota</label>
+      <textarea class="fta" id="note-ta" rows="8" placeholder="Aggiungi una nota su questo nodo…">${esc(n.notes??'')}</textarea>
+    </div>
+    <div class="fg">
+      <div class="toggle-row">
+        <label class="fl" style="margin-bottom:0">Mostra nota nel canvas</label>
+        <input type="checkbox" ${n.showNote?'checked':''} aria-label="Mostra nota" />
+      </div>
+    </div>
+  `;
+}
+
+function readDtMapFromDom(body) {
+  const m = {};
+  body.querySelectorAll('.dt-map-row').forEach(row => {
+    const col = row.querySelector('.dt-map-col')?.value?.trim();
+    const val = row.querySelector('.dt-map-val')?.value ?? '';
+    if (col) m[col] = val;
+  });
+  return m;
+}
+
+/** Prossimo nome colonna dello schema non ancora presente in mappatura (ticket_id, email, …) */
+function nextDataTableSchemaColumn(mapping) {
+  const used = new Set(Object.keys(mapping || {}));
+  for (const c of state.dt.cols) {
+    if (!used.has(c)) return c;
+  }
+  return null;
+}
+
+function attachParamEvents(n) {
+  const body = document.getElementById('cp-body');
+
+  // Generic param change
+  body.querySelectorAll('[data-pp]').forEach(el => {
+    const save = () => dispatch('upd-param', { id: n.id, key: el.dataset.pp, val: el.value });
+    el.addEventListener('change', save);
+    if (el.tagName === 'TEXTAREA') el.addEventListener('input', () => dispatch('upd-param', { id: n.id, key: el.dataset.pp, val: el.value, silent: true }));
+  });
+
+  // Expression toggle buttons
+  body.querySelectorAll('[data-et]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const k = btn.dataset.et;
+      const cur = String(n.p[k] ?? '');
+      const isE = cur.startsWith('={{') || cur.startsWith('=');
+      dispatch('upd-param', { id: n.id, key: k, val: isE ? cur.replace(/^=\{\{|\}\}$/g,'').trim() : `={{ ${cur} }}` });
+    });
+  });
+
+  // Form fields array
+  body.querySelector('#add-ff')?.addEventListener('click', () => dispatch('add-ff', { id: n.id }));
+  body.querySelectorAll('[data-rm-ff]').forEach(btn =>
+    btn.addEventListener('click', () => dispatch('rm-ff', { id: n.id, i: +btn.dataset.rmFf })));
+  body.querySelectorAll('[data-ffi][data-ffk]').forEach(el =>
+    el.addEventListener('change', () => dispatch('upd-ff', { id: n.id, i: +el.dataset.ffi, k: el.dataset.ffk, v: el.value })));
+
+  // IF conditions
+  body.querySelector('#add-cond')?.addEventListener('click', () => dispatch('add-cond', { id: n.id }));
+  body.querySelectorAll('[data-rm-cd]').forEach(btn =>
+    btn.addEventListener('click', () => dispatch('rm-cond', { id: n.id, i: +btn.dataset.rmCd })));
+  body.querySelectorAll('[data-cdi][data-cdk]').forEach(el =>
+    el.addEventListener('change', () => dispatch('upd-cond', { id: n.id, i: +el.dataset.cdi, k: el.dataset.cdk, v: el.value })));
+
+  // Set fields
+  body.querySelector('#add-sf')?.addEventListener('click', () => dispatch('add-sf', { id: n.id }));
+  body.querySelectorAll('[data-rm-sf]').forEach(btn =>
+    btn.addEventListener('click', () => dispatch('rm-sf', { id: n.id, i: +btn.dataset.rmSf })));
+  body.querySelectorAll('[data-sfi][data-sfk]').forEach(el =>
+    el.addEventListener('change', () => dispatch('upd-sf', { id: n.id, i: +el.dataset.sfi, k: el.dataset.sfk, v: el.value })));
+
+  // Form response mode buttons
+  body.querySelectorAll('[data-msgmode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cur = String(n.p.completionMessage ?? '');
+      if (btn.dataset.msgmode === 'expr' && !cur.startsWith('=')) dispatch('upd-param', { id: n.id, key: 'completionMessage', val: `=${cur}` });
+      if (btn.dataset.msgmode === 'fixed' && cur.startsWith('=')) dispatch('upd-param', { id: n.id, key: 'completionMessage', val: cur.slice(1) });
+    });
+  });
+
+  // Disabled toggle in settings
+  body.querySelector('#s-disabled')?.addEventListener('change', e => {
+    n.disabled = e.target.checked;
+    render();
+  });
+
+}
+
+function attachNotesEvents(n) {
+  document.getElementById('note-ta')?.addEventListener('input', e => { n.notes = e.target.value; });
+}
+
+// ── DataTable view ──
+function renderDT() {
+  const dt = state.dt;
+  document.getElementById('dt-badge').textContent = `${dt.rows.length} rig${dt.rows.length!==1?'he':'a'}`;
+  const container = document.getElementById('dt-content');
+  if (dt.rows.length === 0) {
+    container.innerHTML = `<div class="dt-empty"><div class="dt-empty-ico" aria-hidden="true">🗄️</div><div style="font-size:14px;font-weight:700">Nessuna riga dati</div><div style="font-size:12px;max-width:360px;text-align:center;line-height:1.5">Lo <strong>schema</strong> della tabella ha comunque le colonne definite (ticket_id, email, …). <strong>0 righe</strong> significa che non ci sono ancora record inseriti. L’export CSV con una sola riga è l’<strong>intestazione</strong> dei nomi colonna: è il comportamento previsto.</div></div>`;
+    return;
+  }
+  container.innerHTML = `
+    <div class="dt-wrap">
+      <table class="dt-tbl">
+        <thead><tr>
+          <th>#</th>
+          ${dt.cols.map(c=>`<th>${esc(c)}</th>`).join('')}
+          <th>Az.</th>
+        </tr></thead>
+        <tbody id="dt-tbody">
+          ${dt.rows.map((row,i)=>`
+            <tr>
+              <td style="color:var(--muted)">${i+1}</td>
+              ${dt.cols.map(c=>`<td title="${esc(row[c]??'')}"><span>${esc(row[c]??'—')}</span></td>`).join('')}
+              <td><button class="btn btn-ghost btn-sm" data-rm-row="${i}" aria-label="Elimina riga ${i+1}" style="padding:1px 6px">×</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ── Executions view ──
+function renderExecList() {
+  const list = document.getElementById('exec-list');
+  if (state.execHistory.length === 0) {
+    list.innerHTML = `<div class="exec-empty"><div style="font-size:38px" aria-hidden="true">▷</div><div style="font-size:14px;font-weight:700">Nessuna esecuzione</div><div style="font-size:12px">Esegui il workflow per vedere lo storico</div></div>`;
+    return;
+  }
+  list.innerHTML = [...state.execHistory].reverse().map(ex => `
+    <div class="exec-item">
+      <div class="exec-dot ${ex.ok?'ok':'err'}" aria-hidden="true"></div>
+      <div class="exec-info">
+        <div class="exec-trigger">${esc(ex.trigger)}</div>
+        <div class="exec-ts">${esc(ex.ts)}</div>
+      </div>
+      <span class="badge badge-trig">${esc(ex.items)} item${ex.items!==1?'s':''}</span>
+      <div class="exec-dur">${ex.ms}ms</div>
+    </div>
+  `).join('');
+}
+
+// ── Node Library modal ──
+function renderLibModal(search='') {
+  const s = search.toLowerCase();
+  const grid = document.getElementById('lib-grid');
+  const items = Object.values(NT).filter(nt =>
+    !s || nt.label.toLowerCase().includes(s) || nt.cat.toLowerCase().includes(s) || nt.desc.toLowerCase().includes(s)
+  );
+  grid.innerHTML = items.map(nt => `
+    <div class="lib-item" data-lib-type="${esc(nt.key)}" role="button" tabindex="0" aria-label="Aggiungi nodo ${nt.label}">
+      <div class="ni-icon" style="background:${nt.color}20;color:${nt.color};width:30px;height:30px" aria-hidden="true">${esc(nt.icon)}</div>
+      <div>
+        <div class="lib-item-name">${esc(nt.label)}</div>
+        <div class="lib-item-cat">${esc(nt.cat)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  DISPATCH
+// ════════════════════════════════════════════════════════════════════════════
+function dispatch(action, payload={}) {
+  switch (action) {
+
+    case 'set-tab':
+      state.tab = payload.tab;
+      if (state.tab !== 'editor') state.panel.open = false;
+      break;
+
+    case 'sistema-toggle': {
+      state.sistema.open = !state.sistema.open;
+      if (state.sistema.open) {
+        state.panel.open = false;
+        // auto-fit after panel animates in
+        setTimeout(() => dispatch('canvas-fit'), 260);
+      }
+      break;
+    }
+    case 'sistema-close':
+      state.sistema.open = false;
+      break;
+    case 'sistema-save-urls':
+      state.sistema.urls = { insert: payload.insert, check: payload.check, update: payload.update };
+      state.sistema.collapsed.urls = true;
+      break;
+    case 'sistema-tog-card':
+      state.sistema.collapsed[payload.card] = !state.sistema.collapsed[payload.card];
+      break;
+    case 'sistema-tog-urls':
+      state.sistema.collapsed.urls = !state.sistema.collapsed.urls;
+      break;
+
+    case 'sel-node':
+      state.sel = payload.id;
+      break;
+
+    case 'open-panel':
+      state.panel = { open: true, id: payload.id, tab: payload.tab ?? 'params' };
+      state.sel = payload.id;
+      break;
+
+    case 'close-panel':
+      state.panel.open = false;
+      state.sel = null;
+      break;
+
+    case 'set-ptab':
+      state.panel.tab = payload.tab;
+      break;
+
+    case 'upd-param': {
+      const n = nodeById(payload.id);
+      if (!n) break;
+      if (payload.key === '__name') n.name = payload.val;
+      else n.p[payload.key] = payload.val;
+      break;
+    }
+
+    case 'add-ff': {
+      const n = nodeById(payload.id);
+      if (n) n.p.formFields = [...(n.p.formFields??[]), { fieldLabel:'Nuovo campo', fieldName:'campo_'+uid(), fieldType:'text' }];
+      break;
+    }
+    case 'rm-ff': {
+      const n = nodeById(payload.id);
+      if (n) n.p.formFields?.splice(payload.i, 1);
+      break;
+    }
+    case 'upd-ff': {
+      const n = nodeById(payload.id);
+      if (n?.p.formFields?.[payload.i]) n.p.formFields[payload.i][payload.k] = payload.v;
+      break;
+    }
+
+    case 'add-cond': {
+      const n = nodeById(payload.id);
+      if (n) n.p.conditions = [...(n.p.conditions??[]), { leftValue:'', op:'equals', rightValue:'' }];
+      break;
+    }
+    case 'rm-cond': {
+      const n = nodeById(payload.id);
+      if (n) n.p.conditions?.splice(payload.i, 1);
+      break;
+    }
+    case 'upd-cond': {
+      const n = nodeById(payload.id);
+      if (n?.p.conditions?.[payload.i]) n.p.conditions[payload.i][payload.k] = payload.v;
+      break;
+    }
+
+    case 'add-sf': {
+      const n = nodeById(payload.id);
+      if (n) n.p.fields = [...(n.p.fields??[]), { name:'', value:'' }];
+      break;
+    }
+    case 'rm-sf': {
+      const n = nodeById(payload.id);
+      if (n) n.p.fields?.splice(payload.i, 1);
+      break;
+    }
+    case 'upd-sf': {
+      const n = nodeById(payload.id);
+      if (n?.p.fields?.[payload.i]) n.p.fields[payload.i][payload.k] = payload.v;
+      break;
+    }
+
+    case 'move-node': {
+      const n = nodeById(payload.id);
+      if (n) { n.pos[0] = payload.x; n.pos[1] = payload.y; }
+      break;
+    }
+
+    case 'add-node': {
+      const nt = Object.values(NT).find(x => x.key === payload.type);
+      if (!nt) break;
+      const nn = {
+        id: uid(), type: payload.type, name: nt.label,
+        pos: payload.pos ?? [350 + state.nodes.length*30, 250 + state.nodes.length*20],
+        p: payload.type === 'n8n-nodes-base.form'
+          ? { operation: 'completion', completionTitle: 'Completamento', completionMessage: '' }
+          : payload.type === 'n8n-nodes-base.webhook'
+            ? { webhookPath: '' }
+            : {}
+      };
+      state.nodes.push(nn);
+      state.panel = { open: true, id: nn.id, tab: 'params' };
+      state.sel = nn.id;
+      break;
+    }
+
+    case 'del-node': {
+      const i = state.nodes.findIndex(n => n.id === payload.id);
+      if (i !== -1) state.nodes.splice(i, 1);
+      state.conns = state.conns.filter(c => c.from !== payload.id && c.to !== payload.id);
+      if (state.panel.id === payload.id) state.panel.open = false;
+      if (state.sel === payload.id) state.sel = null;
+      break;
+    }
+
+    case 'dup-node': {
+      const n = nodeById(payload.id);
+      if (!n) break;
+      const copy = JSON.parse(JSON.stringify(n));
+      copy.id = uid(); copy.name += ' (copia)';
+      copy.pos = [copy.pos[0]+25, copy.pos[1]+25];
+      state.nodes.push(copy);
+      break;
+    }
+
+    case 'add-conn': {
+      if (payload.from !== payload.to && !state.conns.some(c => c.from===payload.from && c.to===payload.to))
+        state.conns.push({ from: payload.from, to: payload.to });
+      break;
+    }
+
+    case 'del-conn':
+      state.conns.splice(payload.i, 1);
+      break;
+
+    case 'toggle-cat':
+      state.catOpen[payload.cat] = !state.catOpen[payload.cat];
+      break;
+
+    case 'canvas-zoom': {
+      const ca = document.getElementById('canvas-area');
+      const r = ca.getBoundingClientRect();
+      const px = payload.cx ?? r.width/2, py = payload.cy ?? r.height/2;
+      const nz = Math.min(2, Math.max(.2, state.canvas.zoom * payload.f));
+      const wx = (px - state.canvas.x) / state.canvas.zoom;
+      const wy = (py - state.canvas.y) / state.canvas.zoom;
+      state.canvas.zoom = nz;
+      state.canvas.x = px - wx*nz;
+      state.canvas.y = py - wy*nz;
+      break;
+    }
+
+    case 'canvas-fit': {
+      if (!state.nodes.length) break;
+      const ca = document.getElementById('canvas-area');
+      const r = ca.getBoundingClientRect();
+      const xs = state.nodes.map(n=>n.pos[0]), ys = state.nodes.map(n=>n.pos[1]);
+      const minX=Math.min(...xs), maxX=Math.max(...xs)+NW;
+      const minY=Math.min(...ys), maxY=Math.max(...ys)+NH;
+      const z = Math.min(1, Math.min((r.width-80)/(maxX-minX), (r.height-80)/(maxY-minY)));
+      state.canvas.zoom = Math.max(.2, Math.min(1, z));
+      state.canvas.x = (r.width  - (maxX-minX)*state.canvas.zoom)/2 - minX*state.canvas.zoom;
+      state.canvas.y = (r.height - (maxY-minY)*state.canvas.zoom)/2 - minY*state.canvas.zoom;
+      break;
+    }
+
+    case 'import-workflow': {
+      const pr = parseWorkflowImportObject(payload.obj);
+      if (!pr.ok) {
+        alert(pr.err);
+        break;
+      }
+      state.nodes = pr.nodes;
+      state.conns = pr.conns;
+      const wfn = document.getElementById('wf-name');
+      if (wfn) wfn.value = pr.name;
+      state.panel = { open: false, id: null, tab: 'params' };
+      state.sel = null;
+      state.sistema.open = false;
+      state.exec = { running: false, step: null, res: {}, logs: [], io: {} };
+      state.execHistory = [];
+      state.tab = 'editor';
+      closeCtx();
+      const fi = document.getElementById('wf-import-file');
+      if (fi) fi.value = '';
+      setTimeout(() => dispatch('canvas-fit'), 60);
+      break;
+    }
+
+    case 'execute':
+      executeWorkflow(payload.triggerId);
+      return;
+
+    default: break;
+  }
+  if (!payload.silent) render();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  EXECUTION ENGINE
+// ════════════════════════════════════════════════════════════════════════════
+/**
+ * @param {string|null|undefined} triggerId
+ * @param {{ fixedItems?: Array<{json:object}>|null, quiet?: boolean }} [options]
+ * @returns {Promise<{ok:boolean,output:any,lastNodeName:string,err:string}>}
+ */
+async function executeWorkflow(triggerId, options = {}) {
+  const { fixedItems, quiet } = options;
+  const triggers = state.nodes.filter(n => ntByFullKey(n.type).isTrigger && !n.disabled);
+  if (!triggers.length) {
+    if (!quiet) alert('Nessun nodo trigger nel workflow!');
+    return { ok: false, err: 'Nessun trigger', output: null, lastNodeName: '' };
+  }
+
+  const trigger = triggerId ? nodeById(triggerId) : triggers[0];
+  if (!trigger) return { ok: false, err: 'Trigger non trovato', output: null, lastNodeName: '' };
+
+  if (state.exec.running) {
+    if (!quiet) alert('Un\'esecuzione è già in corso.');
+    return { ok: false, err: 'busy', output: null, lastNodeName: '' };
+  }
+
+  state.exec = { running: true, step: null, res: {}, logs: [], io: {} };
+  if (!quiet) showBanner('In attesa di dati dal trigger…');
+  render();
+
+  let triggerData;
+  try {
+    if (fixedItems !== undefined && fixedItems !== null) {
+      const arr = Array.isArray(fixedItems) ? fixedItems : [fixedItems];
+      triggerData = arr.length ? cloneItems(arr) : [{ json: {} }];
+    } else {
+      triggerData = await getTriggerData(trigger);
+    }
+  } catch (e) {
+    if (!quiet) hideBanner();
+    state.exec.running = false;
+    render();
+    return { ok: false, err: e.message || 'Errore', output: null, lastNodeName: '' };
+  }
+  if (!triggerData) {
+    if (!quiet) hideBanner();
+    state.exec.running = false;
+    render();
+    return { ok: false, err: 'Nessun dato dal trigger', output: null, lastNodeName: '' };
+  }
+
+  const t0 = Date.now();
+  let lastChainOutput = triggerData;
+  let lastChainNodeName = trigger.name;
+
+  async function runChain(nodeId, inputData) {
+    const n = nodeById(nodeId);
+    if (!n || n.disabled) return;
+    state.exec.step = nodeId;
+    if (!quiet) showBanner(`Esecuzione: ${n.name}…`);
+    renderCanvas();
+    await sleep(550);
+
+    const inputSnapshot = cloneItems(inputData);
+    let output;
+    try {
+      output = await runNode(n, inputData);
+      state.exec.res[nodeId] = { status: 'ok', output };
+      state.exec.io[nodeId] = { input: inputSnapshot, output: cloneItems(output) };
+      lastChainOutput = output;
+      lastChainNodeName = n.name;
+    } catch (e) {
+      state.exec.res[nodeId] = { status: 'err', err: e.message.slice(0, 60), output: [] };
+      state.exec.io[nodeId] = { input: inputSnapshot, output: [], error: e.message };
+      renderCanvas();
+      return;
+    }
+    renderCanvas();
+    await sleep(280);
+
+    const nexts = state.conns.filter(c => c.from === nodeId);
+    for (const c of nexts) await runChain(c.to, output);
+  }
+
+  let out = { ok: true, output: null, lastNodeName: '', err: '' };
+  try {
+    await runChain(trigger.id, triggerData);
+  } finally {
+    const modal = document.getElementById('form-modal');
+    const box = document.getElementById('fm-content');
+    if (!quiet && modal?.classList.contains('open') && box?.dataset?.fmPhase === 'waiting') {
+      try {
+        const j = lastChainOutput?.[0]?.json ?? {};
+        let preview = JSON.stringify(j, null, 2);
+        if (preview.length > 1200) preview = preview.slice(0, 1200) + '\n…';
+        await showCompletion(
+          'Workflow completato',
+          `Ultimo nodo eseguito: «${lastChainNodeName}».\n\nOutput (primo item):\n${preview}\n\nSuggerimento: collega in coda un nodo **Form Response** (operazione «Completamento») per chiudere il form con un messaggio personalizzato.`
+        );
+      } catch { /* ignore */ }
+    }
+    const hadErr = Object.values(state.exec.res).some(r => r.status === 'err');
+    const ms = Date.now() - t0;
+    state.exec.running = false;
+    state.exec.step = null;
+    state.execHistory.push({
+      trigger: quiet ? `Sistema · ${trigger.name}` : trigger.name,
+      ok: !hadErr,
+      ts: new Date().toLocaleString('it-IT'),
+      items: triggerData.length, ms,
+    });
+    if (!quiet) hideBanner();
+    render();
+    out = {
+      ok: !hadErr,
+      output: lastChainOutput,
+      lastNodeName: lastChainNodeName,
+      err: hadErr ? 'Un nodo ha restituito errore' : '',
+    };
+  }
+  return out;
+}
+
+async function getTriggerData(n) {
+  if (n.type === 'n8n-nodes-base.formTrigger') return showFormModal(n);
+  if (n.type === 'n8n-nodes-base.manualTrigger') return [{ json: { timestamp: new Date().toISOString() } }];
+  return [{ json: {} }];
+}
+
+async function runNode(n, input) {
+  await sleep(150);
+  switch (n.type) {
+
+    case 'n8n-nodes-base.formTrigger':
+    case 'n8n-nodes-base.manualTrigger':
+    case 'n8n-nodes-base.webhook':
+      return input;
+
+    case 'n8n-nodes-base.code': {
+      const out = [];
+      for (const item of input) {
+        const $json  = item.json;
+        const $input = { all: ()=>input, first: ()=>input[0], last: ()=>input[input.length-1] };
+        const fn = new Function('$json','$input','$item',
+          `"use strict";\n${n.p.jsCode ?? 'return [{json:{}}]'}`);
+        const r = fn($json, $input, item);
+        if (Array.isArray(r)) out.push(...r);
+        else if (r) out.push(r);
+      }
+      return out.length ? out : input;
+    }
+
+    case 'n8n-nodes-base.dataTable': {
+      const op  = n.p.operation ?? 'insert';
+      const dt  = state.dt;
+
+      if (op === 'insert') {
+        const map = n.p.mapping ?? {};
+        return input.map(item => {
+          const row = {};
+          for (const [col, expr] of Object.entries(map)) row[col] = resolve(expr, item.json);
+          if (!row.Submission) row.Submission = new Date().toISOString();
+          dt.rows.push(row);
+          return { json: { ...item.json, ...row } };
+        });
+      }
+
+      if (op === 'get') {
+        const fk = (n.p.filterKey ?? '').trim();
+        if (!fk) throw new Error('Data Table (Ottieni): scegli il «Campo chiave» del filtro nei parametri del nodo.');
+        const out = [];
+        for (const item of input) {
+          const fv = resolve(n.p.filterVal ?? '', item.json);
+          const matched = dt.rows.filter(r => String(r[fk]) === String(fv));
+          if (matched.length) matched.forEach(r => out.push({ json: {...r} }));
+          else out.push({ json: { stato: 'Non trovato', avanzamento: 'N/A', [fk]: fv } });
+        }
+        return out;
+      }
+
+      if (op === 'update') {
+        const fk = (n.p.filterKey ?? '').trim();
+        if (!fk) throw new Error('Data Table (Aggiorna): scegli il «Campo chiave» del filtro nei parametri del nodo.');
+        const map = n.p.mapping ?? {};
+        for (const item of input) {
+          const fv = resolve(n.p.filterVal ?? '', item.json);
+          dt.rows.forEach(r => {
+            if (String(r[fk]) === String(fv)) {
+              for (const [col, expr] of Object.entries(map)) r[col] = resolve(expr, item.json);
+            }
+          });
+        }
+        return input;
+      }
+
+      if (op === 'delete') {
+        const fk = (n.p.filterKey ?? '').trim();
+        if (!fk) throw new Error('Data Table (Elimina): scegli il «Campo chiave» del filtro nei parametri del nodo.');
+        for (const item of input) {
+          const fv = resolve(n.p.filterVal ?? '', item.json);
+          state.dt.rows = dt.rows.filter(r => String(r[fk]) !== String(fv));
+        }
+        return input;
+      }
+
+      if (op === 'getAll') return dt.rows.map(r => ({ json: {...r} }));
+      return input;
+    }
+
+    case 'n8n-nodes-base.form': {
+      const op = n.p.operation ?? 'completion';
+      if (op === 'completion') {
+        const item = input[0] ?? { json: {} };
+        const msg  = resolve(n.p.completionMessage ?? '', item.json);
+        await showCompletion(n.p.completionTitle ?? 'Completamento', msg);
+      }
+      return input;
+    }
+
+    case 'n8n-nodes-base.set': {
+      const fields = n.p.fields ?? [];
+      return input.map(item => {
+        const j = { ...item.json };
+        fields.forEach(f => { j[f.name] = resolve(f.value, item.json); });
+        return { json: j };
+      });
+    }
+
+    case 'n8n-nodes-base.if': {
+      const conds = n.p.conditions ?? [];
+      return input.filter(item => {
+        return conds.every(c => {
+          const lv = resolve(c.leftValue, item.json);
+          const rv = resolve(c.rightValue ?? '', item.json);
+          switch (c.op) {
+            case 'equals':     return String(lv) === String(rv);
+            case 'notEquals':  return String(lv) !== String(rv);
+            case 'contains':   return String(lv).includes(rv);
+            case 'startsWith': return String(lv).startsWith(rv);
+            case 'endsWith':   return String(lv).endsWith(rv);
+            case 'gt':  return +lv > +rv;
+            case 'lt':  return +lv < +rv;
+            case 'gte': return +lv >= +rv;
+            case 'lte': return +lv <= +rv;
+            default: return true;
+          }
+        });
+      });
+    }
+
+    case 'n8n-nodes-base.httpRequest':
+      return input.map(item => ({ json: { ...item.json, _statusCode: 200, _simulated: true } }));
+
+    case 'n8n-nodes-base.emailSend':
+      console.info('[n8n-sandbox] Email → ', resolve(n.p.toEmail??'', input[0]?.json??{}));
+      return input;
+
+    default:
+      return input;
+  }
+}
+
+function evalJsonSnippet(code, json) {
+  try {
+    const v = new Function('$json', `return (${code.trim()})`)(json);
+    return v == null ? '' : String(v);
+  } catch {
+    return '';
+  }
+}
+
+/** Risolve espressioni n8n: ={{ $json.x }}, {{ $json.x }}, campo intero ={{ ... }} */
+function resolve(expr, json) {
+  if (!expr || typeof expr !== 'string') return expr;
+  const whole = expr.trim();
+  if (whole.startsWith('={{') && whole.endsWith('}}')) {
+    try { return new Function('$json', `return (${whole.slice(3, -2).trim()})`)(json); }
+    catch { return expr; }
+  }
+  const t = expr.trimStart();
+  if (t.startsWith('=')) {
+    let body = t.slice(1);
+    body = body.replace(/=\{\{\s*([^}]+?)\s*\}\}/g, (_, code) => evalJsonSnippet(code, json));
+    body = body.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_, code) => evalJsonSnippet(code, json));
+    return body;
+  }
+  return expr;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  MODALS
+// ════════════════════════════════════════════════════════════════════════════
+function showFormModal(n) {
+  return new Promise(resolve => {
+    const p      = n.p;
+    const fields = p.formFields ?? [];
+    const modal  = document.getElementById('form-modal');
+    const box    = document.getElementById('fm-content');
+    const rm = p.responseMode ?? 'lastNode';
+    const waitChain = rm === 'lastNode' || rm === 'responseNode';
+    const waitDesc = rm === 'responseNode'
+      ? 'Hai scelto «Nodo di risposta»: attendi il completamento del workflow. Se in coda c’è un **Form Response**, vedrai qui il messaggio di completamento.'
+      : 'Risposta dall’ultimo nodo: attendi il completamento del workflow. Il messaggio finale apparirà qui se collegato un **Form Response**.';
+
+    box.innerHTML = `
+      <div class="fm-badge">FORM TRIGGER — Test</div>
+      <div class="fm-title">${esc(p.formTitle ?? 'Form')}</div>
+      <div class="fm-desc">${esc(p.formDescription ?? '')}</div>
+      <form id="fm-form" novalidate>
+        ${fields.map(f => `
+          <div class="fm-fg">
+            <label class="fm-lbl" for="fm-${esc(f.fieldName)}">${esc(f.fieldLabel)}</label>
+            <input type="${f.fieldType==='email'?'email':f.fieldType==='number'?'number':'text'}"
+              class="fm-inp" id="fm-${esc(f.fieldName)}" name="${esc(f.fieldName)}"
+              placeholder="${esc(f.fieldLabel)}…" autocomplete="off" />
+          </div>
+        `).join('')}
+        <button type="submit" class="fm-submit">Invia →</button>
+        <button type="button" class="fm-cancel" id="fm-cancel">Annulla</button>
+      </form>
+    `;
+    modal.classList.add('open');
+    box.querySelector('input')?.focus();
+
+    const close = (data) => { modal.classList.remove('open'); resolve(data); };
+
+    document.getElementById('fm-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const data = {};
+      new FormData(e.target).forEach((v,k) => { data[k] = v; });
+      data.submittedAt = new Date().toISOString();
+      if (waitChain) {
+        box.innerHTML = `
+          <div class="fm-badge">FORM TRIGGER</div>
+          <div class="fm-title" style="margin-top:8px">Elaborazione…</div>
+          <div class="fm-desc" style="margin-top:10px">${waitDesc}</div>
+          <div style="text-align:center;padding:28px 0 8px"><div class="spinner" style="width:28px;height:28px;border-width:3px;margin:0 auto" aria-hidden="true"></div></div>
+        `;
+        box.dataset.fmPhase = 'waiting';
+        resolve([{ json: data }]);
+      } else {
+        close([{ json: data }]);
+      }
+    });
+    document.getElementById('fm-cancel').addEventListener('click', () => close(null));
+  });
+}
+
+function showCompletion(title, message) {
+  return new Promise(res => {
+    const modal = document.getElementById('form-modal');
+    const box   = document.getElementById('fm-content');
+    if (!box || !modal) { res(); return; }
+    delete box.dataset.fmPhase;
+    box.innerHTML = `
+      <div class="fm-completion">
+        <div class="fm-completion-ico" aria-hidden="true">✅</div>
+        <div class="fm-completion-ttl">${esc(title)}</div>
+        <div class="fm-completion-msg">${esc(message)}</div>
+        <button type="button" class="fm-submit" id="comp-close" style="margin-top:24px">Chiudi</button>
+      </div>
+    `;
+    modal.classList.add('open');
+    requestAnimationFrame(() => document.getElementById('comp-close')?.focus());
+    const close = () => { modal.classList.remove('open'); res(); };
+    document.getElementById('comp-close').addEventListener('click', close);
+  });
+}
+
+function showBanner(txt) {
+  document.getElementById('exec-txt').textContent = txt;
+  document.getElementById('exec-banner').classList.add('show');
+}
+function hideBanner() { document.getElementById('exec-banner').classList.remove('show'); }
+
+// ════════════════════════════════════════════════════════════════════════════
+//  CANVAS INTERACTIONS
+// ════════════════════════════════════════════════════════════════════════════
+function initCanvas() {
+  const ca = document.getElementById('canvas-area');
+  let panning = false, panSt = {x:0,y:0};
+  let dragging = false, dragId = null, dragOff = {x:0,y:0};
+  let connecting = false, connFrom = null;
+  /** Distanza² puntatore da mousedown su nodo (per non aprire il menu dopo un drag) */
+  let nodeDragDistSq = 0, nodeDragAnchor = { x: 0, y: 0 };
+
+  ca.addEventListener('mousedown', e => {
+    const port = e.target.closest('[data-port]');
+    const node = e.target.closest('.wf-node');
+    nodeDragDistSq = 0;
+
+    if (port?.dataset.port === 'out') {
+      connecting = true; connFrom = port.dataset.nid;
+      state.connecting.active = true; state.connecting.fromId = connFrom;
+      const fn = nodeById(connFrom);
+      state.connecting.tx = { x1: fn.pos[0]+NW, y1: fn.pos[1]+NH/2, x2: fn.pos[0]+NW, y2: fn.pos[1]+NH/2 };
+      port.classList.add('is-connecting');
+      e.preventDefault(); return;
+    }
+
+    if (node && !port && !e.target.closest('.node-kebab')) {
+      dragging = true; dragId = node.dataset.nid;
+      nodeDragAnchor = { x: e.clientX, y: e.clientY };
+      const n = nodeById(dragId);
+      const w = screenToWorld(e.clientX, e.clientY);
+      dragOff = { x: w.x - n.pos[0], y: w.y - n.pos[1] };
+      dispatch('sel-node', { id: dragId });
+      e.preventDefault(); return;
+    }
+
+    const onSvg = e.target.id === 'svg-layer' || e.target.tagName === 'svg';
+    if (e.target === ca || e.target.id === 'canvas-world' || e.target.id === 'nodes-layer' || onSvg) {
+      panning = true;
+      panSt = { x: e.clientX - state.canvas.x, y: e.clientY - state.canvas.y };
+      if (state.panel.open) { state.panel.open = false; state.sel = null; render(); }
+      e.preventDefault();
+    }
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (panning) {
+      state.canvas.x = e.clientX - panSt.x;
+      state.canvas.y = e.clientY - panSt.y;
+      renderCanvas(); return;
+    }
+    if (dragging && dragId) {
+      const dx = e.clientX - nodeDragAnchor.x, dy = e.clientY - nodeDragAnchor.y;
+      nodeDragDistSq = Math.max(nodeDragDistSq, dx * dx + dy * dy);
+      const w = screenToWorld(e.clientX, e.clientY);
+      dispatch('move-node', { id: dragId, x: Math.round((w.x-dragOff.x)/20)*20, y: Math.round((w.y-dragOff.y)/20)*20 });
+      return;
+    }
+    if (connecting && connFrom) {
+      const w = screenToWorld(e.clientX, e.clientY);
+      const fn = nodeById(connFrom);
+      state.connecting.tx = { x1: fn.pos[0]+NW, y1: fn.pos[1]+NH/2, x2: w.x, y2: w.y };
+      renderConns();
+    }
+  });
+
+  document.addEventListener('mouseup', e => {
+    if (connecting) {
+      const port = e.target.closest('[data-port="in"]');
+      if (port) dispatch('add-conn', { from: connFrom, to: port.dataset.nid });
+      state.connecting.active = false;
+      connecting = false; connFrom = null;
+      document.querySelectorAll('.port-out.is-connecting').forEach(p => p.classList.remove('is-connecting'));
+      renderConns();
+    }
+    panning = false; dragging = false; dragId = null;
+  });
+
+  // Menu azioni solo dal pulsante ⋯ sul nodo. Clic destro sul nodo → pannello parametri.
+  ca.addEventListener('click', e => {
+    const kebab = e.target.closest('.node-kebab');
+    if (kebab) {
+      e.stopPropagation();
+      const node = kebab.closest('.wf-node');
+      if (node) {
+        const r = kebab.getBoundingClientRect();
+        openCtx(Math.round(r.left), Math.round(r.bottom + 4), node.dataset.nid);
+      }
+      return;
+    }
+    const path = e.target.closest('.conn-path');
+    if (path && e.detail === 1) {
+      const i = +path.dataset.ci;
+      if (confirm(`Eliminare la connessione?`)) dispatch('del-conn', { i });
+    }
+  });
+
+  // Scroll zoom
+  ca.addEventListener('wheel', e => {
+    e.preventDefault();
+    const r = ca.getBoundingClientRect();
+    dispatch('canvas-zoom', { f: e.deltaY < 0 ? 1.11 : .9, cx: e.clientX-r.left, cy: e.clientY-r.top });
+  }, { passive: false });
+
+  // Tasto destro = pannello parametri (come n8n: apri editor). Menu azioni dal pulsante ⋯ sul nodo.
+  ca.addEventListener('contextmenu', e => {
+    const node = e.target.closest('.wf-node');
+    if (!node || e.target.closest('[data-port]')) return;
+    e.preventDefault();
+    dispatch('open-panel', { id: node.dataset.nid, tab: 'params' });
+  });
+
+  // Drag from sidebar
+  ca.addEventListener('dragover', e => e.preventDefault());
+  ca.addEventListener('drop', e => {
+    e.preventDefault();
+    const type = e.dataTransfer.getData('nodeType');
+    if (type) {
+      const w = screenToWorld(e.clientX, e.clientY);
+      dispatch('add-node', { type, pos: [Math.round(w.x), Math.round(w.y)] });
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  CONTEXT MENU
+// ════════════════════════════════════════════════════════════════════════════
+function openCtx(x, y, id) {
+  state.ctx = { open: true, id };
+  const m = document.getElementById('ctx-menu');
+  m.style.left = x+'px'; m.style.top = y+'px';
+  m.classList.add('open');
+}
+function closeCtx() { document.getElementById('ctx-menu').classList.remove('open'); state.ctx.open = false; }
+
+// ════════════════════════════════════════════════════════════════════════════
+//  EVENT LISTENERS
+// ════════════════════════════════════════════════════════════════════════════
+function initConfigPanelDnD() {
+  const cfg = document.getElementById('cfg-panel');
+  if (!cfg || cfg.dataset.dndBound) return;
+  cfg.dataset.dndBound = '1';
+
+  cfg.addEventListener('dragstart', e => {
+    const chip = e.target.closest('.json-chip[data-chip]');
+    if (!chip) return;
+    const enc = chip.getAttribute('data-chip');
+    const expr = enc ? decodeURIComponent(enc) : '';
+    e.dataTransfer.setData('text/plain', expr);
+    e.dataTransfer.effectAllowed = 'copy';
+  });
+
+  cfg.addEventListener('dragover', e => {
+    cfg.querySelectorAll('[data-drop-expr].drop-target-active').forEach(el => el.classList.remove('drop-target-active'));
+    const t = e.target.closest('[data-drop-expr]');
+    if (t) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      t.classList.add('drop-target-active');
+    }
+  });
+
+  cfg.addEventListener('dragleave', e => {
+    const t = e.target.closest('[data-drop-expr]');
+    if (t && !t.contains(e.relatedTarget)) t.classList.remove('drop-target-active');
+  });
+
+  cfg.addEventListener('drop', e => {
+    const t = e.target.closest('[data-drop-expr]');
+    if (!t) return;
+    e.preventDefault();
+    e.stopPropagation();
+    t.classList.remove('drop-target-active');
+    const text = e.dataTransfer.getData('text/plain');
+    if (!text) return;
+    if (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT') insertAtCursor(t, text);
+  });
+
+  cfg.addEventListener('dragend', () => {
+    cfg.querySelectorAll('.drop-target-active').forEach(el => el.classList.remove('drop-target-active'));
+  });
+
+  /* Data Table — mappatura: delegazione (un solo listener, niente duplicati a ogni render) */
+  cfg.addEventListener('click', e => {
+    const n = state.panel.open && state.panel.id ? nodeById(state.panel.id) : null;
+    if (!n || n.type !== 'n8n-nodes-base.dataTable') return;
+    const body = document.getElementById('cp-body');
+    if (!body) return;
+    if (e.target.closest('#dt-map-add')) {
+      e.preventDefault();
+      if (!n.p.mapping) n.p.mapping = {};
+      const next = nextDataTableSchemaColumn(n.p.mapping);
+      if (next) {
+        n.p.mapping[next] = '';
+      } else {
+        alert('Tutte le colonne dello schema sono già mappate. Rimuovi una riga o modifica la colonna da un menu a tendina.');
+        return;
+      }
+      render();
+      return;
+    }
+    if (e.target.closest('[data-dt-map-rm]')) {
+      e.preventDefault();
+      const row = e.target.closest('.dt-map-row');
+      const k = row?.querySelector('.dt-map-col')?.value?.trim();
+      if (k && n.p.mapping) delete n.p.mapping[k];
+      render();
+    }
+  });
+
+  cfg.addEventListener('change', e => {
+    const n = state.panel.open && state.panel.id ? nodeById(state.panel.id) : null;
+    if (!n || n.type !== 'n8n-nodes-base.dataTable') return;
+    if (e.target.matches('.dt-map-col')) {
+      n.p.mapping = readDtMapFromDom(document.getElementById('cp-body'));
+      render();
+    }
+    if (e.target.matches('.dt-map-val')) {
+      n.p.mapping = readDtMapFromDom(document.getElementById('cp-body'));
+    }
+  });
+
+  cfg.addEventListener('input', e => {
+    if (!e.target.matches('.dt-map-val')) return;
+    const n = state.panel.open && state.panel.id ? nodeById(state.panel.id) : null;
+    if (!n || n.type !== 'n8n-nodes-base.dataTable') return;
+    n.p.mapping = readDtMapFromDom(document.getElementById('cp-body'));
+  });
+}
+
+function initEvents() {
+  initConfigPanelDnD();
+
+  // Tabs
+  document.querySelectorAll('.tab').forEach(t =>
+    t.addEventListener('click', () => dispatch('set-tab', { tab: t.dataset.tab })));
+
+  // Panel close
+  document.getElementById('cp-close').addEventListener('click', () => dispatch('close-panel'));
+
+  // Panel tabs
+  document.getElementById('cp-tabs').addEventListener('click', e => {
+    const t = e.target.closest('.cp-tab');
+    if (t) dispatch('set-ptab', { tab: t.dataset.ptab });
+  });
+
+  // Save node
+  document.getElementById('btn-save-node').addEventListener('click', () => {
+    dispatch('close-panel');
+    const btn = document.getElementById('btn-save-node');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Salvato'; btn.style.background = 'var(--green)';
+    setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 1600);
+  });
+
+  // Test node
+  document.getElementById('btn-test-node').addEventListener('click', () => {
+    const id = state.panel.id;
+    const n  = nodeById(id);
+    if (!n) return;
+    if (ntByFullKey(n.type).isTrigger) dispatch('execute', { triggerId: id });
+    else dispatch('execute', {});
+  });
+
+  // Execute button → show trigger picker if multiple triggers
+  document.getElementById('btn-exec').addEventListener('click', e => {
+    e.stopPropagation();
+    const trigs = state.nodes.filter(n => ntByFullKey(n.type).isTrigger && !n.disabled);
+    if (trigs.length === 0) { alert('Nessun nodo trigger trovato!'); return; }
+    if (trigs.length === 1) { dispatch('execute', { triggerId: trigs[0].id }); return; }
+
+    const picker = document.getElementById('trig-picker');
+    picker.innerHTML = trigs.map(n => {
+      const nt = ntByFullKey(n.type);
+      return `<div class="trig-opt" data-trig-id="${n.id}">
+        <div style="width:22px;height:22px;border-radius:4px;background:${nt.color}20;color:${nt.color};display:flex;align-items:center;justify-content:center;font-size:10px;white-space:nowrap;line-height:1;font-family:ui-monospace,'Cascadia Code',monospace">${esc(nt.icon)}</div>
+        <div><div class="trig-opt-name">${esc(n.name)}</div><div class="trig-opt-type">${esc(nt.label)}</div></div>
+      </div>`;
+    }).join('');
+    picker.classList.add('open');
+  });
+
+  document.getElementById('trig-picker').addEventListener('click', e => {
+    const opt = e.target.closest('[data-trig-id]');
+    if (opt) { document.getElementById('trig-picker').classList.remove('open'); dispatch('execute', { triggerId: opt.dataset.trigId }); }
+  });
+
+  // Stop exec
+  document.getElementById('btn-stop').addEventListener('click', () => {
+    state.exec.running = false;
+    hideBanner(); render();
+  });
+
+  // Save workflow JSON
+  document.getElementById('btn-save').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify({ name: document.getElementById('wf-name').value, nodes: state.nodes, connections: state.conns }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'workflow.json'; a.click();
+  });
+
+  document.getElementById('btn-import').addEventListener('click', () => {
+    document.getElementById('wf-import-file').click();
+  });
+  document.getElementById('wf-import-file').addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      e.target.value = '';
+      let obj;
+      try {
+        obj = JSON.parse(String(reader.result ?? ''));
+      } catch (err) {
+        alert(`JSON non valido: ${err.message}`);
+        return;
+      }
+      const pr = parseWorkflowImportObject(obj);
+      if (!pr.ok) {
+        alert(pr.err);
+        return;
+      }
+      if (state.nodes.length && !confirm('Sostituire il workflow corrente con quello importato?')) return;
+      dispatch('import-workflow', { obj });
+    };
+    reader.onerror = () => alert('Impossibile leggere il file.');
+    reader.readAsText(file, 'UTF-8');
+  });
+
+  // Add node button
+  document.getElementById('btn-add-node').addEventListener('click', () => {
+    document.getElementById('lib-modal').classList.add('open');
+    document.getElementById('lib-search').value = '';
+    document.getElementById('lib-search').focus();
+    renderLibModal();
+  });
+
+  // Library modal
+  document.getElementById('lib-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('lib-modal')) document.getElementById('lib-modal').classList.remove('open');
+    const item = e.target.closest('[data-lib-type]');
+    if (item) {
+      document.getElementById('lib-modal').classList.remove('open');
+      dispatch('add-node', { type: item.dataset.libType });
+    }
+  });
+  document.getElementById('lib-modal').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const item = document.querySelector('#lib-grid .lib-item:focus');
+      if (item) { document.getElementById('lib-modal').classList.remove('open'); dispatch('add-node', { type: item.dataset.libType }); }
+    }
+  });
+  document.getElementById('lib-search').addEventListener('input', e => renderLibModal(e.target.value));
+
+  // Canvas controls
+  document.getElementById('cc-fit').addEventListener('click', () => dispatch('canvas-fit'));
+  document.getElementById('cc-in').addEventListener('click',  () => dispatch('canvas-zoom', { f: 1.2 }));
+  document.getElementById('cc-out').addEventListener('click', () => dispatch('canvas-zoom', { f: .8 }));
+
+  // Sidebar search
+  document.getElementById('sb-search').addEventListener('input', () => renderSidebar());
+
+  // Sidebar drag
+  document.getElementById('sb-body').addEventListener('dragstart', e => {
+    const item = e.target.closest('[data-drag-type]');
+    if (item) e.dataTransfer.setData('nodeType', item.dataset.dragType);
+  });
+
+  // Sidebar category toggle
+  document.getElementById('sb-body').addEventListener('click', e => {
+    const hdr = e.target.closest('[data-toggle-cat]');
+    if (hdr) dispatch('toggle-cat', { cat: hdr.dataset.toggleCat });
+  });
+
+  // Context menu
+  document.getElementById('ctx-menu').addEventListener('click', e => {
+    const item = e.target.closest('[data-ctx]');
+    if (!item) return;
+    const id = state.ctx.id; closeCtx();
+    const n = nodeById(id);
+    switch(item.dataset.ctx) {
+      case 'test':    dispatch('execute', { triggerId: id }); break;
+      case 'copy':    dispatch('dup-node', { id }); break;
+      case 'open':    dispatch('open-panel', { id }); break;
+      case 'disable': if (n) { n.disabled = !n.disabled; render(); } break;
+      case 'del':     if (confirm(`Eliminare "${n?.name}"?`)) dispatch('del-node', { id }); break;
+    }
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#ctx-menu') && !e.target.closest('#canvas-area .wf-node')) closeCtx();
+    if (!e.target.closest('#btn-exec') && !e.target.closest('#trig-picker'))
+      document.getElementById('trig-picker').classList.remove('open');
+  });
+
+  // DataTable controls
+  document.getElementById('dt-content').addEventListener('click', e => {
+    const btn = e.target.closest('[data-rm-row]');
+    if (btn) { state.dt.rows.splice(+btn.dataset.rmRow, 1); renderDT(); }
+  });
+  document.getElementById('btn-clr-dt').addEventListener('click', () => {
+    if (confirm('Svuotare tutti i dati della tabella?')) { state.dt.rows = []; renderDT(); }
+  });
+  document.getElementById('btn-exp-dt').addEventListener('click', () => {
+    const { cols, rows } = state.dt;
+    const csv = [cols.join(','), ...rows.map(r => cols.map(c => JSON.stringify(r[c]??'')).join(','))].join('\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = 'esercitazione.csv'; a.click();
+  });
+
+  // Executions clear
+  document.getElementById('btn-clr-exec').addEventListener('click', () => { state.execHistory = []; renderExecList(); });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    const inField = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
+    if (e.key === 'Escape') {
+      dispatch('close-panel');
+      document.getElementById('lib-modal').classList.remove('open');
+      document.getElementById('trig-picker').classList.remove('open');
+      closeCtx();
+    }
+    if (!inField && (e.key === 'Delete' || e.key === 'Backspace') && state.sel) {
+      const n = nodeById(state.sel);
+      if (n && confirm(`Eliminare "${n.name}"?`)) dispatch('del-node', { id: state.sel });
+    }
+    if (!inField && e.key.toLowerCase() === 'f') dispatch('canvas-fit');
+    if (!inField && e.key.toLowerCase() === 'a') {
+      document.getElementById('lib-modal').classList.add('open');
+      document.getElementById('lib-search').value = '';
+      document.getElementById('lib-search').focus();
+      renderLibModal();
+    }
+    if (!inField && (e.key === '+' || e.key === '=')) dispatch('canvas-zoom', { f: 1.15 });
+    if (!inField && e.key === '-') dispatch('canvas-zoom', { f: .85 });
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  SISTEMA EVENTS
+// ════════════════════════════════════════════════════════════════════════════
+function initSistemaEvents() {
+  // Sidebar button
+  document.getElementById('sb-sistema-btn').addEventListener('click', () => {
+    dispatch('sistema-toggle');
+    render();
+  });
+
+  // Delegated handler on sistema-panel (re-renders happen, so we use the panel itself)
+  const panel = document.getElementById('sistema-panel');
+
+  panel.addEventListener('click', e => {
+    // Close
+    if (e.target.closest('#sist-close')) {
+      dispatch('sistema-close'); render(); return;
+    }
+    // Toggle URL box
+    if (e.target.closest('#sist-tog-urls')) {
+      dispatch('sistema-tog-urls'); render(); return;
+    }
+    // Toggle cards
+    const tog = e.target.closest('[data-sist-tog]');
+    if (tog) {
+      dispatch('sistema-tog-card', { card: tog.dataset.sistTog }); render(); return;
+    }
+    // Save URLs
+    if (e.target.closest('#sist-save-urls')) {
+      const ins = document.getElementById('sist-url-insert')?.value.trim() ?? '';
+      const chk = document.getElementById('sist-url-check')?.value.trim() ?? '';
+      const upd = document.getElementById('sist-url-update')?.value.trim() ?? '';
+      dispatch('sistema-save-urls', { insert: ins, check: chk, update: upd });
+      render(); return;
+    }
+    // Submit: Inserisci Ticket
+    if (e.target.closest('#sist-ins-submit')) {
+      void sistemaLocalExecute('insert', {
+        nome:      document.getElementById('sist-ins-nome')?.value ?? '',
+        email:     document.getElementById('sist-ins-email')?.value ?? '',
+        categoria: document.getElementById('sist-ins-cat')?.value ?? '',
+        priorita:  document.getElementById('sist-ins-pri')?.value ?? '',
+        problema:  document.getElementById('sist-ins-prob')?.value ?? '',
+      }, 'sist-ins-spin', 'sist-ins-resp');
+      return;
+    }
+    if (e.target.closest('#sist-chk-submit')) {
+      void sistemaLocalExecute('check', { ticket_id: document.getElementById('sist-chk-id')?.value ?? '' }, 'sist-chk-spin', 'sist-chk-resp');
+      return;
+    }
+    if (e.target.closest('#sist-upd-submit')) {
+      void sistemaLocalExecute('update', {
+        ticket_id:   document.getElementById('sist-upd-id')?.value ?? '',
+        stato:       document.getElementById('sist-upd-stato')?.value ?? '',
+        avanzamento: document.getElementById('sist-upd-note')?.value ?? '',
+      }, 'sist-upd-spin', 'sist-upd-resp');
+      return;
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════════════════════
+function init() {
+  initCanvas();
+  initEvents();
+  initSistemaEvents();
+  renderSidebar();
+  setTimeout(() => { dispatch('canvas-fit'); }, 60);
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
